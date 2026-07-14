@@ -24,10 +24,30 @@ android {
         applicationId = "com.wilbajamas.kongsi"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        // Hardcoding to 26 and not using flutter.minSdkVersion
+        // Reason: Flutter's default minSdk is below 26 (as of now - 2026)
+        // Unless Google decides to bump it up, we'll need to keep this.
+        minSdk = 26
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+    }
+
+    flavorDimensions += "environment"
+    productFlavors {
+        create("dev") {
+            dimension = "environment"
+            applicationIdSuffix = ".dev"
+            versionNameSuffix = "-dev"
+        }
+        create("staging") {
+            dimension = "environment"
+            applicationIdSuffix = ".staging"
+            versionNameSuffix = "-staging"
+        }
+        create("prod") {
+            dimension = "environment"
+        }
     }
 
     buildTypes {
