@@ -18,5 +18,6 @@
 | [014](ADR-014-clock-uuid.md) | Clock + UUID are injected abstractions | Accepted |
 | [015](ADR-015-android-sdk-targets.md) | Android minSdk = 26 | Accepted |
 | [016](ADR-016-ios-deployment-target.md) | iOS deployment target = iOS 16 | Accepted |
+| [017](ADR-017-import-boundary-enforcement-deferred.md) | Automated import-boundary enforcement | **Deferred** |
 
-Only **ADR-007** remains genuinely open, deferred to its Phase 4 spike by design.
+**ADR-007** is open, deferred to its Phase 4 spike by design. **ADR-017** is deferred pending tooling maturity — see the ADR for what was tried.
