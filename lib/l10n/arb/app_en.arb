@@ -1,0 +1,7 @@
+{
+    "@@locale": "en",
+    "appTitle": "Kongsi",
+    "@appTitle": {
+        "description": "App name shown in the OS task switcher."
+    }
+}
