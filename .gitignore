@@ -50,3 +50,6 @@ app.*.map.json
 # Configs
 /config/*.json
 !/config/*.example.json
+
+# Android
+android/.kotlin/

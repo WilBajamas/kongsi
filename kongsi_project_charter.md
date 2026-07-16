@@ -29,6 +29,9 @@ NEXT ACTION   : Close ADR-011 (package ID — own the domain first) & ADR-005 (l
 BLOCKERS      : none
 DECISIONS OPEN: ADR-005 (local DB), ADR-011 (package ID), ADR-012 (toolchain),
                 deep-link provider (Phase 4 spike)
+AI SECTION    : §17 "AI features (optional)" added — three tiers, Edge-Function
+                proxy, ADR-019…023; natural-language-entry flow left as an
+                explicit future task. (Phase / next-action state unchanged.)
 ```
 
 ---
@@ -134,7 +137,7 @@ Close these ADRs *before* `flutter create`. If you can't state each in one sente
 - **App name / codename.**
 - **Flutter + Dart SDK versions** — pinned.
 - **Min SDK / target platforms.**
-- State mgmt, DI, DB, routing, error model — all locked (see ADRs §18).
+- State mgmt, DI, DB, routing, error model — all locked (see ADRs §19).
 
 ### Stage 1 — Reproducible toolchain
 
@@ -168,7 +171,7 @@ Flavors per §14. Then the piece people miss:
 
 ### Stage 5 — Architecture skeleton & enforced boundaries
 
-Folder structure (§21) + the import/lint rules that enforce `presentation → domain → data`.
+Folder structure (§22) + the import/lint rules that enforce `presentation → domain → data`.
 
 ### Stage 6 — The spine (cross-cutting primitives)
 
@@ -377,7 +380,54 @@ Pipeline stages:
 - **Remote Config** feature flags: `enable_realtime`, `enable_ocr`, `enable_biometric_lock`.
 - **A/B test:** onboarding variant (e.g., invite-first vs create-group-first).
 
-## 17. Delivery roadmap (each phase ships a slice + teaches specific concepts)
+## 17. AI features (optional)
+
+**Guiding principle — AI proposes, the user disposes, and the app does the math.** The model may parse, suggest, or phrase — but a **human confirms before anything writes to the ledger**, and every arithmetic operation runs in deterministic Dart, **never inside the LLM**. An expense app that silently saves a hallucinated number is *worse* than one with no AI at all: it launders a guess into a record of who owes whom, which is the one thing this product exists to get right. So AI is strictly an input-assistance and phrasing layer on top of the existing offline ledger — it never *becomes* the ledger.
+
+These features are **optional and additive**. The app is fully functional with every one of them switched off (Remote Config flags, §16), and each tier degrades gracefully to the one below it.
+
+### The three tiers (cost / architecture trade-offs)
+
+- **Tier 1 — on-device, free: receipt OCR.** Already the Phase 6 Pigeon / ML Kit showcase (§8, §18 roadmap) — **cross-reference, not a new build.** Runs locally: no network hop, no per-call cost, no API key. The cheapest possible "AI," and it's already on the plan.
+- **Tier 2 — classic ML / heuristics, cheap: auto-categorize + duplicate/anomaly detection.** Guess an expense's category from its description; flag a likely duplicate ("you added 'Grab' twice in three minutes") or an out-of-range amount. **No LLM required** — a lookup table, a small on-device classifier, or plain rules. Costs ~nothing to run and **degrades gracefully**: when it's unsure it simply stays quiet, and the user categorizes by hand exactly as they always could.
+- **Tier 3 — LLM-powered: natural-language expense entry (flagship) + trip/group Q&A assistant (stretch).** "I paid 120 for dinner, split between me, Aisha and Jon" → a structured expense *proposal*. "How much does Jon still owe me for the Bali trip?" → an answer *computed from the ledger*. This is the only tier that costs per-call money and needs a server hop, so it sits behind the proxy below.
+
+### The architecture unlock — a serverless proxy
+
+Every LLM call routes through a **Supabase Edge Function proxy** that holds the provider API key **server-side**. **Never ship an API key in the app** — a key baked into a mobile binary is a key that has already leaked, and a leaked LLM key is a stranger spending your money. The app sends the user's text to the Edge Function; the function calls the model, validates the result, and returns it.
+
+This is the **same serverless pattern as the existing Supabase→FCM push trigger** (§10, §12) — a *second instance* of a shape you're already building, not a new category of work. Two Edge Functions, one mental model.
+
+### The two techniques to learn (the real learning arc)
+
+The senior-level lesson here isn't "call an API" — it's *making an unreliable component safe to build on*:
+
+1. **Structured / constrained output.** The model must return **schema-valid JSON** (matching the expense/split domain model, §9), which the app then **validates and rejects if malformed**. You never trust free text into your ledger — you parse it into a typed object and *throw it away* if it doesn't fit the schema or the business rules. This validation gate is what turns a probabilistic model into a dependable input source.
+2. **Tool / function calling over local data.** For the Q&A assistant, the model does **not** get the ledger dumped into its prompt. It is given a set of *tools* (typed queries) and **chooses which one to run**; the app executes that query deterministically against the local DB and either hands back the rows or computes the answer itself. The model orchestrates; **Dart owns the data and does the arithmetic.** This keeps private financial data out of the prompt and keeps the numbers correct.
+
+> **RAG / embeddings are deliberately out of scope.** Kongsi's data is small, structured, and per-user — a handful of groups and expense rows behind RLS. Tool-calling over the real tables beats embedding-and-retrieving a corpus you don't have. Don't reach for a vector DB to answer what is really a `WHERE` clause.
+
+### Two caveats (read before starting Tier 3)
+
+- **Model choice and pricing move fast.** Don't hard-code a model now. When you actually reach Tier 3, run a **short spike** to pick the current best-value model (ADR-023) and keep the choice behind config so it stays swappable.
+- **Rate-limit at the proxy, early.** The Edge Function must enforce a **per-user rate limit from its first commit**. An LLM endpoint with no cap is an open invitation to run up a bill — by accident (a retry loop) or by abuse. It's cheap to add on day one and a nasty surprise if bolted on later.
+
+### Natural-language expense entry — flow (to be drawn out)
+
+> **Future task — do not design this in full now.** This subsection is a brief for a later session to expand into a proper sequence sketch. It is intentionally left as a placeholder.
+
+The eventual flow must cover the whole path end-to-end and honor the guiding principle at both ends:
+
+1. **User text input** — free-form ("I paid 120 for dinner, split with Aisha and Jon").
+2. → **Edge Function proxy** — holds the key, enforces the per-user rate limit.
+3. → **LLM with a constrained JSON schema** that matches the expense / split domain model (§9).
+4. → **Validation** — parse into a typed domain object; **reject and fall back to the manual add-expense form** if the JSON is malformed or fails business rules.
+5. → **Confirmation screen** — the user sees the parsed expense (payer, amount, split) and must **explicitly confirm**. Nothing is written before this.
+6. → **into the existing add-expense Command / outbox path** (§7, §11) — the confirmed expense is enqueued as the *same* `AddExpense` Command a hand-typed one would produce. **Reuse the offline-write mechanism; do not build a parallel one.**
+
+Two hard rules the sketch must state explicitly: the flow **ends in user confirmation**, and it **performs no arithmetic in the model** — any totals or split amounts are recomputed in deterministic Dart from the confirmed inputs. Mark clearly as a **future task**.
+
+## 18. Delivery roadmap (each phase ships a slice + teaches specific concepts)
 
 | Phase | Slice | Concepts you learn |
 |---|---|---|
@@ -391,10 +441,11 @@ Pipeline stages:
 | **7. Hardening & Pro** | Encrypted DB, Play Integrity, A/B onboarding, golden tests, Test Lab, staged rollout, Pro paywall (IAP) | security, testing at scale, **monetization** |
 | **8. Native port** | Rebuild in Compose + MVI + Hilt + Room | **MVI**, modern Android, cross-stack fluency |
 | **9. Stretch (optional)** | Home-screen widget (native + channel), FFI debt-simplification | widgets/wearables, FFI |
+| **10. AI features (optional)** | Tiered, all gated behind "AI proposes, user disposes" (§17): Tier 1 receipt OCR (**already Phase 6**) → Tier 2 auto-categorize + duplicate/anomaly detection (classic ML / heuristics) → Tier 3 natural-language expense entry (**flagship**, LLM via Edge Function proxy) → trip/group Q&A assistant (**stretch**, tool-calling over the ledger) | **serverless proxy** (2nd Edge Function), **structured/constrained JSON output**, **tool/function calling**, safe-by-design LLM integration |
 
 > ⚠️ **Phase 4 spike:** Firebase Dynamic Links was discontinued (shut down Aug 2025). Before committing a deep-link/attribution vendor, run a short spike to pick a current option (e.g. Branch, AppsFlyer, or a DIY deferred-link scheme). Verify status when you reach this phase.
 
-## 18. Architecture Decision Records (fill these in as you go)
+## 19. Architecture Decision Records (fill these in as you go)
 
 Keep a `/docs/adr/` folder. One file per decision. Starter list:
 - **ADR-001** Backend = Supabase (data/auth/realtime) + Firebase (platform services). *Accepted.*
@@ -411,10 +462,16 @@ Keep a `/docs/adr/` folder. One file per decision. Starter list:
 - **ADR-012** Toolchain = pinned Flutter SDK (FVM) + committed version file + dependency-bump policy. *Proposed.*
 - **ADR-013** Config = single typed `AppConfig` built at startup from `--dart-define-from-file`; no `String.fromEnvironment` in feature code. *Accepted.*
 - **ADR-014** Clock + UUID are injected abstractions (load-bearing for idempotency + LWW conflict resolution + testable sync). *Accepted.*
+- **ADR-015 – 018** *(recorded in `/docs/adr/` ahead of this starter list — see that folder for full text)* — Android `minSdk 26`; iOS deployment target 16; automated import-boundary enforcement deferred; single token-refresh owner (Supabase SDK; the dio interceptor delegates). *Accepted / Deferred.*
+- **ADR-019** AI features are optional, Remote-Config-gated, and bound by "AI proposes, user disposes": the model parses/suggests/phrases, a human confirms every ledger write, and all arithmetic runs in deterministic Dart. *Accepted.*
+- **ADR-020** All LLM calls route through a Supabase Edge Function proxy that holds the provider API key server-side; no LLM key ever ships in the client, and the proxy enforces a per-user rate limit. *Accepted.*
+- **ADR-021** LLM outputs must be constrained to a JSON schema and validated on-device; malformed or rule-violating responses are rejected and fall back to manual entry. *Accepted.*
+- **ADR-022** The Q&A assistant uses tool/function calling over the local ledger (the model chooses a typed query, the app executes it) rather than dumping ledger data into the prompt; RAG/embeddings are out of scope. *Proposed.*
+- **ADR-023** LLM model selection is deferred to a short spike at Tier 3 (pricing/quality move fast); the chosen model is config-swappable, never hard-coded. *Open — Tier 3 spike.*
 
 *ADR-005 recommendation:* **Drift** (relational SQL, mirrors your Postgres schema, supports SQLCipher encryption, joins make balance queries clean) over Isar/Hive. Isar is faster to write but the relational ledger benefits from SQL and the Postgres mental model helps in interviews. Your call — record the reasoning either way.
 
-## 19. Risk register / weakness → mitigation map
+## 20. Risk register / weakness → mitigation map
 
 | Your weak spot | Where it's built up | Mitigation / note |
 |---|---|---|
@@ -432,8 +489,9 @@ Keep a `/docs/adr/` folder. One file per decision. Starter list:
 | Project bootstrapping / foundations | Phase 0 (§6-A) | Cost-to-retrofit ordering; walking skeleton proves the architecture before features |
 | Error modeling / OOP | Phase 0 spine + Phase 2 | Result/Failure taxonomy, then Command pattern |
 | No Mac / iOS | Phases 0, CI | Scaffold iOS + build on CI macOS runners |
+| AI integration (new learning area) | Phase 10 (optional) | Tiered rollout (on-device → heuristics → LLM); "user confirms + app does the math" safety rule; LLM behind an Edge Function proxy with a per-user rate limit, never a client-side key |
 
-## 20. Glossary
+## 21. Glossary
 
 - **Walking skeleton / tracer bullet** — the thinnest possible feature that runs end-to-end through every architectural layer, built to *prove* the foundation before features are added.
 - **Cost-to-retrofit ordering** — the Phase 0 principle: set up decisions in decreasing order of how expensive they'd be to change later.
@@ -450,8 +508,12 @@ Keep a `/docs/adr/` folder. One file per decision. Starter list:
 - **Foreground service** — Android background work tied to a persistent notification, for guaranteed, user-visible long-running tasks; no true iOS equivalent.
 - **Silent / data push** — an FCM message with no visible notification, used to wake the app and trigger a background sync.
 - **Background isolate** — a Dart isolate for off-main-thread compute (`compute()`); threading, *not* an OS background service.
+- **AI proposes, user disposes** — the rule governing all AI features: the model may parse, suggest, or phrase, but a human must confirm before anything writes to the ledger, and all arithmetic runs in deterministic Dart, never in the model.
+- **Structured / constrained output** — requiring an LLM to return schema-valid JSON (matching a domain model), which the app validates and rejects if malformed, instead of consuming free-form text.
+- **Tool / function calling** — giving an LLM a set of typed operations to choose from; the model picks which to invoke and the app executes it deterministically, keeping the underlying data and the arithmetic out of the model.
+- **Edge Function proxy** — a Supabase serverless function that holds a provider API key server-side and mediates outbound calls (LLM, and the existing FCM push trigger), so no secret ships in the app; also the place per-user rate limits are enforced.
 
-## 21. Suggested repo structure (Flutter)
+## 22. Suggested repo structure (Flutter)
 
 ```
 lib/

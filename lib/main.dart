@@ -1,21 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:kongsi/core/config/app_config.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kongsi/core/di/core_providers.dart';
 
 void main() {
   runApp(
-    MainApp(
-      config: AppConfig.fromEnvironment(),
-    ),
+    const MainApp(),
   );
 }
 
-class MainApp extends StatelessWidget {
-  const MainApp({required this.config, super.key});
-
-  final AppConfig config;
+class MainApp extends ConsumerWidget {
+  const MainApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final config = ref.watch(appConfigProvider);
     return MaterialApp(
       home: Scaffold(
         body: Center(
