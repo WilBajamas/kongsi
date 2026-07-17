@@ -1,6 +1,6 @@
 # ADR-010: Routing = go_router, typed routes, deep-link-ready from Phase 0
 
-**Status:** Accepted
+**Status:** Superseded by ADR-020 (2026-07-17)
 **Date:** 2026-07-14
 
 ## Context

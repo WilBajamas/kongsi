@@ -22,16 +22,19 @@ If you're an AI assistant or coding agent picking this up cold:
 ### Current status (update this every session)
 
 ```
-CURRENT PHASE : Phase 0 — Foundations (not started) — full spec in §6-A
-LAST DONE     : Charter + §12 Background execution + §6-A Project Foundations
-NEXT ACTION   : Close ADR-011 (package ID — own the domain first) & ADR-005 (local DB),
-                then Stage 1: pin toolchain. Work §6-A stages in order; exit on its DoD.
+CURRENT PHASE : Phase 0 — Foundations (in progress) — full spec in §6-A
+LAST DONE     : Stage 6 (the spine) complete — error model, logger, clock/UUID,
+                dio network client, Drift DB, Riverpod composition root, theme
+                from design tokens, l10n (en/ms/zh). ADRs 001–019 recorded.
+NEXT ACTION   : Stage 7 — routing (deep-link-ready; ADR-010). Then Stage 8 test
+                harness → Stage 9 CI skeleton → Stage 10 global error capture →
+                walking skeleton.
 BLOCKERS      : none
-DECISIONS OPEN: ADR-005 (local DB), ADR-011 (package ID), ADR-012 (toolchain),
-                deep-link provider (Phase 4 spike)
+DECISIONS OPEN: ADR-006 (conflict resolution, Proposed), ADR-007 (deep-link
+                provider — Phase 4 spike)
 AI SECTION    : §17 "AI features (optional)" added — three tiers, Edge-Function
-                proxy, ADR-019…023; natural-language-entry flow left as an
-                explicit future task. (Phase / next-action state unchanged.)
+                proxy, plus five unnumbered future AI ADRs (§19); natural-
+                language-entry flow left as an explicit future task.
 ```
 
 ---
@@ -409,7 +412,7 @@ The senior-level lesson here isn't "call an API" — it's *making an unreliable 
 
 ### Two caveats (read before starting Tier 3)
 
-- **Model choice and pricing move fast.** Don't hard-code a model now. When you actually reach Tier 3, run a **short spike** to pick the current best-value model (ADR-023) and keep the choice behind config so it stays swappable.
+- **Model choice and pricing move fast.** Don't hard-code a model now. When you actually reach Tier 3, run a **short spike** to pick the current best-value model (see the model-selection entry in §19) and keep the choice behind config so it stays swappable.
 - **Rate-limit at the proxy, early.** The Edge Function must enforce a **per-user rate limit from its first commit**. An LLM endpoint with no cap is an open invitation to run up a bill — by accident (a retry loop) or by abuse. It's cheap to add on day one and a nasty surprise if bolted on later.
 
 ### Natural-language expense entry — flow (to be drawn out)
@@ -463,11 +466,14 @@ Keep a `/docs/adr/` folder. One file per decision. Starter list:
 - **ADR-013** Config = single typed `AppConfig` built at startup from `--dart-define-from-file`; no `String.fromEnvironment` in feature code. *Accepted.*
 - **ADR-014** Clock + UUID are injected abstractions (load-bearing for idempotency + LWW conflict resolution + testable sync). *Accepted.*
 - **ADR-015 – 018** *(recorded in `/docs/adr/` ahead of this starter list — see that folder for full text)* — Android `minSdk 26`; iOS deployment target 16; automated import-boundary enforcement deferred; single token-refresh owner (Supabase SDK; the dio interceptor delegates). *Accepted / Deferred.*
-- **ADR-019** AI features are optional, Remote-Config-gated, and bound by "AI proposes, user disposes": the model parses/suggests/phrases, a human confirms every ledger write, and all arithmetic runs in deterministic Dart. *Accepted.*
-- **ADR-020** All LLM calls route through a Supabase Edge Function proxy that holds the provider API key server-side; no LLM key ever ships in the client, and the proxy enforces a per-user rate limit. *Accepted.*
-- **ADR-021** LLM outputs must be constrained to a JSON schema and validated on-device; malformed or rule-violating responses are rejected and fall back to manual entry. *Accepted.*
-- **ADR-022** The Q&A assistant uses tool/function calling over the local ledger (the model chooses a typed query, the app executes it) rather than dumping ledger data into the prompt; RAG/embeddings are out of scope. *Proposed.*
-- **ADR-023** LLM model selection is deferred to a short spike at Tier 3 (pricing/quality move fast); the chosen model is config-swappable, never hard-coded. *Open — Tier 3 spike.*
+- **ADR-019** Localization = gen_l10n (ARB) + intl; strings translated in the presentation layer only (lower layers emit typed errors/keys). *Accepted.*
+*Future AI ADRs (from §17 — left unnumbered on purpose so real ADR files can keep taking the next free number; each gets a number when it's actually written):*
+
+- AI features are optional, Remote-Config-gated, and bound by "AI proposes, user disposes": the model parses/suggests/phrases, a human confirms every ledger write, and all arithmetic runs in deterministic Dart. *Accepted (charter-level).*
+- All LLM calls route through a Supabase Edge Function proxy that holds the provider API key server-side; no LLM key ever ships in the client, and the proxy enforces a per-user rate limit. *Accepted (charter-level).*
+- LLM outputs must be constrained to a JSON schema and validated on-device; malformed or rule-violating responses are rejected and fall back to manual entry. *Accepted (charter-level).*
+- The Q&A assistant uses tool/function calling over the local ledger (the model chooses a typed query, the app executes it) rather than dumping ledger data into the prompt; RAG/embeddings are out of scope. *Proposed.*
+- LLM model selection is deferred to a short spike at Tier 3 (pricing/quality move fast); the chosen model is config-swappable, never hard-coded. *Open — Tier 3 spike.*
 
 *ADR-005 recommendation:* **Drift** (relational SQL, mirrors your Postgres schema, supports SQLCipher encryption, joins make balance queries clean) over Isar/Hive. Isar is faster to write but the relational ledger benefits from SQL and the Postgres mental model helps in interviews. Your call — record the reasoning either way.
 
