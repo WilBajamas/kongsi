@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-/// This is the single source of truth for colour. The Material [ColorScheme] in
-/// `app_theme.dart`.
+/// Single source of truth for colour; the Material ColorScheme is derived from
+/// these values.
 @immutable
 class AppColors extends ThemeExtension<AppColors> {
   const AppColors({
@@ -18,7 +18,6 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.debit,
   });
 
-  /// Light palette
   static const light = AppColors(
     bg: Color(0xFFF6F6F4),
     surface: Color(0xFFFFFFFF),
@@ -33,7 +32,6 @@ class AppColors extends ThemeExtension<AppColors> {
     debit: Color(0xFFC4443A),
   );
 
-  /// Dark palette.
   static const dark = AppColors(
     bg: Color(0xFF0C0C0D),
     surface: Color(0xFF17171A),

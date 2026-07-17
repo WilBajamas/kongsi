@@ -60,7 +60,7 @@ abstract final class AppTextStyles {
   );
 }
 
-/// Set custom text themes to the Material's [TextTheme]
+/// Mapped onto Material slots so stock widgets inherit Geist and our sizing.
 const appTextTheme = TextTheme(
   displayMedium: AppTextStyles.balanceHero,
   headlineMedium: AppTextStyles.titleL,
