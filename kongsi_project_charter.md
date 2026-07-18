@@ -366,15 +366,16 @@ Three environments: **dev / staging / prod**. Each gets its own Supabase project
 **iOS (scaffold only, no Mac)**
 - Create schemes + `.xcconfig` per flavor. You can't run it, but **build it on a GitHub Actions macOS runner** to validate the config compiles. Keep a matching `GoogleService-Info.plist` per flavor.
 
-## 15. CI/CD plan (GitHub Actions)
+## 15. CI/CD plan (GitHub Actions + Bitrise)
+
+**Two hosts, split by responsibility (ADR-021).** GitHub Actions is the per-PR **verification gate** — fast, free, hand-written to learn the fundamentals. **Bitrise** is the **release/distribution** pipeline for the Mac-dependent signing + store delivery a no-Mac developer can't do locally, with **fastlane** inside it (`match` for iOS signing, `supply`/`pilot` for store uploads). The Bitrise/fastlane side is built when distribution first has a job (Firebase App Distribution, around the walking skeleton), not before.
 
 Pipeline stages:
-1. **Verify:** `flutter analyze`, `dart format --set-exit-if-changed`, unit + widget + **golden** tests.
-2. **Build Android:** per-flavor App Bundle; sign via CI secrets.
-3. **Build iOS:** on `macos-latest` runner — compiles/validates iOS flavor setup **without a local Mac** (signing can be deferred; the build proves the config).
-4. **Distribute:** Firebase App Distribution (staging builds to testers).
-5. **Integration:** run `integration_test` on **Firebase Test Lab** device matrix.
-6. **Release:** staged rollout on Play Console.
+1. **Verify — GitHub Actions:** `flutter analyze`, `dart format --set-exit-if-changed`, unit + widget + **golden** tests, and per-flavor build-compile checks (Android on Linux, iOS compile-only on `macos-latest`).
+2. **Build & sign — Bitrise:** per-flavor Android App Bundle + iOS archive, signed via **fastlane** + CI secrets.
+3. **Distribute — Bitrise:** Firebase App Distribution (staging builds to testers).
+4. **Integration:** run `integration_test` on **Firebase Test Lab** device matrix.
+5. **Release — Bitrise + fastlane:** staged rollout on Play Console / TestFlight.
 
 ## 16. Observability
 

@@ -22,5 +22,6 @@
 | [018](ADR-018-token-refresh-ownership.md) | Single token-refresh owner (Supabase SDK; dio interceptor delegates) | Accepted |
 | [019](ADR-019-localization.md) | Localization = gen_l10n (ARB) + intl; translate in presentation only | Accepted |
 | [020](ADR-020-routing-auto-route.md) | Routing = auto_route (supersedes ADR-010); deep-link-ready | Accepted |
+| [021](ADR-021-cicd-tooling.md) | CI/CD split: GitHub Actions (PR gate) + Bitrise (release) + fastlane | Accepted |
 
 **ADR-007** is open, deferred to its Phase 4 spike by design. **ADR-017** is deferred pending tooling maturity — see the ADR for what was tried.
