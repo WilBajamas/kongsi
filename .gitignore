@@ -53,3 +53,8 @@ app.*.map.json
 
 # Android
 android/.kotlin/
+
+# Alchemist platform goldens are OS-specific; CI asserts goldens/ci only.
+test/**/goldens/windows/
+test/**/goldens/macos/
+test/**/goldens/linux/
