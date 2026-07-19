@@ -10,4 +10,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get appTitle => 'Kongsi';
+
+  @override
+  String get groupsEmpty => '还没有群组';
 }

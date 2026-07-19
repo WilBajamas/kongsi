@@ -1,5 +1,5 @@
 import 'package:auto_route/auto_route.dart';
-import 'package:kongsi/features/home/presentation/home_page.dart';
+import 'package:kongsi/features/groups/presentation/pages/groups_page.dart';
 
 part 'app_router.gr.dart';
 
@@ -10,6 +10,6 @@ part 'app_router.gr.dart';
 class AppRouter extends RootStackRouter {
   @override
   List<AutoRoute> get routes => [
-    AutoRoute(page: HomeRoute.page, path: '/', initial: true),
+    AutoRoute(page: GroupsRoute.page, path: '/', initial: true),
   ];
 }

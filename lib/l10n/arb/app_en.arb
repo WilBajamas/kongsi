@@ -3,5 +3,9 @@
     "appTitle": "Kongsi",
     "@appTitle": {
         "description": "App name shown in the OS task switcher."
+    },
+    "groupsEmpty": "No groups yet",
+    "@groupsEmpty": {
+        "description": "Shown on the groups screen when the list is empty."
     }
 }

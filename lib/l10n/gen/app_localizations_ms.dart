@@ -10,4 +10,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get appTitle => 'Kongsi';
+
+  @override
+  String get groupsEmpty => 'Tiada kumpulan lagi';
 }

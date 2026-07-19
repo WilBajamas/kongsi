@@ -1,4 +1,5 @@
 {
     "@@locale": "zh",
-    "appTitle": "Kongsi"
+    "appTitle": "Kongsi",
+    "groupsEmpty": "还没有群组"
 }

@@ -11,17 +11,17 @@
 part of 'app_router.dart';
 
 /// generated route for
-/// [HomePage]
-class HomeRoute extends PageRouteInfo<void> {
-  const HomeRoute({List<PageRouteInfo>? children})
-    : super(HomeRoute.name, initialChildren: children);
+/// [GroupsPage]
+class GroupsRoute extends PageRouteInfo<void> {
+  const GroupsRoute({List<PageRouteInfo>? children})
+    : super(GroupsRoute.name, initialChildren: children);
 
-  static const String name = 'HomeRoute';
+  static const String name = 'GroupsRoute';
 
   static PageInfo page = PageInfo(
     name,
     builder: (data) {
-      return const HomePage();
+      return const GroupsPage();
     },
   );
 }

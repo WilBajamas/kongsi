@@ -105,6 +105,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Kongsi'**
   String get appTitle;
+
+  /// Shown on the groups screen when the list is empty.
+  ///
+  /// In en, this message translates to:
+  /// **'No groups yet'**
+  String get groupsEmpty;
 }
 
 class _AppLocalizationsDelegate
