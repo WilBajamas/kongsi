@@ -1,6 +1,6 @@
 import 'package:uuid/uuid.dart';
 
-abstract class UuidGenerator {
+abstract interface class UuidGenerator {
   String generate();
 }
 

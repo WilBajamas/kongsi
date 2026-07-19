@@ -1,4 +1,4 @@
-abstract class Clock {
+abstract interface class Clock {
   DateTime now();
 }
 
