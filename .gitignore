@@ -58,3 +58,6 @@ android/.kotlin/
 test/**/goldens/windows/
 test/**/goldens/macos/
 test/**/goldens/linux/
+
+# Golden failure diffs are debug artifacts.
+test/**/failures/
