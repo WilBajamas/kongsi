@@ -9,15 +9,18 @@ class DriftGroupsRepository implements GroupsRepository {
 
   @override
   Stream<List<Group>> watchGroups() {
-    return _db.select(_db.groups).watch().map(
+    return _db
+        .select(_db.groups)
+        .watch()
+        .map(
           (rows) => rows.map(_toEntity).toList(),
         );
   }
 
   Group _toEntity(GroupRow row) => Group(
-        id: row.id,
-        name: row.name,
-        currency: row.currency,
-        createdAt: row.createdAt,
-      );
+    id: row.id,
+    name: row.name,
+    currency: row.currency,
+    createdAt: row.createdAt,
+  );
 }
