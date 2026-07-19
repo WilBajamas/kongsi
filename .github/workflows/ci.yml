@@ -33,6 +33,14 @@ jobs:
         run: flutter analyze --fatal-infos
       - name: Test
         run: flutter test
+      # Golden failures write diff images; surface them for download.
+      - name: Upload golden failure diffs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: golden-failures
+          path: test/**/failures/
+          retention-days: 7
 
   build-android:
     needs: verify
