@@ -13,4 +13,22 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get groupsEmpty => '还没有群组';
+
+  @override
+  String get createGroupTitle => '创建群组';
+
+  @override
+  String get groupNameLabel => '群组名称';
+
+  @override
+  String get currencyLabel => '货币';
+
+  @override
+  String get cancel => '取消';
+
+  @override
+  String get create => '创建';
+
+  @override
+  String get createGroupFailed => '无法创建群组，请重试。';
 }

@@ -1,5 +1,11 @@
 {
     "@@locale": "ms",
     "appTitle": "Kongsi",
-    "groupsEmpty": "Tiada kumpulan lagi"
+    "groupsEmpty": "Tiada kumpulan lagi",
+    "createGroupTitle": "Cipta kumpulan",
+    "groupNameLabel": "Nama kumpulan",
+    "currencyLabel": "Mata wang",
+    "cancel": "Batal",
+    "create": "Cipta",
+    "createGroupFailed": "Kumpulan tidak dapat dicipta. Cuba lagi."
 }

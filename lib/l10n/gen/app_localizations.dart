@@ -111,6 +111,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No groups yet'**
   String get groupsEmpty;
+
+  /// Title of the create-group dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Create group'**
+  String get createGroupTitle;
+
+  /// Label for the group name field.
+  ///
+  /// In en, this message translates to:
+  /// **'Group name'**
+  String get groupNameLabel;
+
+  /// Label for the group currency field.
+  ///
+  /// In en, this message translates to:
+  /// **'Currency'**
+  String get currencyLabel;
+
+  /// Generic cancel button.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// Generic create/submit button.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get create;
+
+  /// Error shown in the create-group dialog when saving fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not create the group. Try again.'**
+  String get createGroupFailed;
 }
 
 class _AppLocalizationsDelegate

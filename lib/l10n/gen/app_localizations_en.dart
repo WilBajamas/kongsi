@@ -13,4 +13,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get groupsEmpty => 'No groups yet';
+
+  @override
+  String get createGroupTitle => 'Create group';
+
+  @override
+  String get groupNameLabel => 'Group name';
+
+  @override
+  String get currencyLabel => 'Currency';
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get create => 'Create';
+
+  @override
+  String get createGroupFailed => 'Could not create the group. Try again.';
 }

@@ -13,4 +13,22 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get groupsEmpty => 'Tiada kumpulan lagi';
+
+  @override
+  String get createGroupTitle => 'Cipta kumpulan';
+
+  @override
+  String get groupNameLabel => 'Nama kumpulan';
+
+  @override
+  String get currencyLabel => 'Mata wang';
+
+  @override
+  String get cancel => 'Batal';
+
+  @override
+  String get create => 'Cipta';
+
+  @override
+  String get createGroupFailed => 'Kumpulan tidak dapat dicipta. Cuba lagi.';
 }

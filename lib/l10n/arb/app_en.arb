@@ -7,5 +7,29 @@
     "groupsEmpty": "No groups yet",
     "@groupsEmpty": {
         "description": "Shown on the groups screen when the list is empty."
+    },
+    "createGroupTitle": "Create group",
+    "@createGroupTitle": {
+        "description": "Title of the create-group dialog."
+    },
+    "groupNameLabel": "Group name",
+    "@groupNameLabel": {
+        "description": "Label for the group name field."
+    },
+    "currencyLabel": "Currency",
+    "@currencyLabel": {
+        "description": "Label for the group currency field."
+    },
+    "cancel": "Cancel",
+    "@cancel": {
+        "description": "Generic cancel button."
+    },
+    "create": "Create",
+    "@create": {
+        "description": "Generic create/submit button."
+    },
+    "createGroupFailed": "Could not create the group. Try again.",
+    "@createGroupFailed": {
+        "description": "Error shown in the create-group dialog when saving fails."
     }
 }

@@ -1,5 +1,11 @@
 {
     "@@locale": "zh",
     "appTitle": "Kongsi",
-    "groupsEmpty": "还没有群组"
+    "groupsEmpty": "还没有群组",
+    "createGroupTitle": "创建群组",
+    "groupNameLabel": "群组名称",
+    "currencyLabel": "货币",
+    "cancel": "取消",
+    "create": "创建",
+    "createGroupFailed": "无法创建群组，请重试。"
 }
