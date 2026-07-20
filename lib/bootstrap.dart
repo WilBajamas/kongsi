@@ -2,7 +2,9 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kongsi/app/app_bloc_observer.dart';
 import 'package:kongsi/core/config/app_config.dart';
 import 'package:kongsi/core/di/core_providers.dart';
 import 'package:kongsi/core/logger/app_logger.dart';
@@ -13,17 +15,18 @@ import 'package:kongsi/main.dart';
 void bootstrap(AppConfig config) {
   final talker = createLogger();
 
-  // Framework errors (build/layout/paint) arrive here.
+  // Error Net 1: Framework errors (build/layout/paint) arrive here.
   FlutterError.onError = (details) {
     talker.handle(details.exception, details.stack);
   };
 
-  // Async errors with no local handler arrive here.
+  // Error Net 2: Async errors with no local handler arrive here.
   PlatformDispatcher.instance.onError = (error, stack) {
     talker.handle(error, stack);
     return true;
   };
 
+  // Error Net 3: Uncaught async errors, including Zone errors - fallback net
   unawaited(
     runZonedGuarded(
       () async {
@@ -46,6 +49,9 @@ void bootstrap(AppConfig config) {
             uuid: container.read(uuidGeneratorProvider),
           );
         }
+
+        // Error Net 4: Bloc errors
+        Bloc.observer = AppBlocObserver(talker);
 
         runApp(
           UncontrolledProviderScope(

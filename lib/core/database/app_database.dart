@@ -27,6 +27,10 @@ class AppDatabase extends _$AppDatabase {
       if (from < 2) {
         await m.createTable(groups);
       }
+
+      if (from < 3) {
+        await m.createTable(outbox);
+      }
     },
   );
 }
