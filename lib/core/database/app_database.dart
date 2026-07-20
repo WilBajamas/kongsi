@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 import 'package:kongsi/core/database/tables/groups_table.dart';
+import 'package:kongsi/core/database/tables/outbox_table.dart';
 
 part 'app_database.g.dart';
 
@@ -12,12 +13,12 @@ class AppMeta extends Table {
   Set<Column<Object>> get primaryKey => {key};
 }
 
-@DriftDatabase(tables: [AppMeta, Groups])
+@DriftDatabase(tables: [AppMeta, Groups, Outbox])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(driftDatabase(name: 'kongsi'));
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

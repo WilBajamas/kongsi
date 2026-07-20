@@ -9,4 +9,7 @@ class MockGroupsRepository implements GroupsRepository {
 
   @override
   Stream<List<Group>> watchGroups() => Stream.value(_groups);
+
+  @override
+  Future<void> createGroup(Group group) async {}
 }
