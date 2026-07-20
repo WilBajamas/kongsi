@@ -51,6 +51,10 @@ void bootstrap(AppConfig config) {
         }
 
         // Error Net 4: Bloc errors
+        // ! Note: This is a global observer, so it will catch all bloc errors.
+        // ! This line is extremely dangerous and should and always be used here only.
+        // ! Because `Bloc.observer` is a mutable static state, it can be mutated from anywhere in this project.
+        // ! SHOULD ONLY BE USED HERE.
         Bloc.observer = AppBlocObserver(talker);
 
         runApp(
