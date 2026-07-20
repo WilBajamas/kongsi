@@ -256,6 +256,21 @@ Guardrails, given a tempting mind map full of concepts:
 
 > Interview line: "I used Riverpod for DI and Bloc/Cubit for feature state — separation of dependency-provision from state-management — and modeled every write as a Command so offline sync, retry, and undo fell out of one abstraction."
 
+## 7-A. Modern Dart usage (deliberate practice, all phases)
+
+Write idiomatic **modern Dart** on purpose — when a Dart 3.x construct fits, prefer it over the pre-3 idiom, and be able to say why. Reference: dart.dev language docs. The checklist (version introduced):
+
+- **Sealed classes + exhaustive switches** (3.0) — error/state/event hierarchies.
+- **Switch expressions & patterns** (3.0) — destructuring (`Group(:id)`), guard clauses (`when`), if-case.
+- **Records** (3.0) — lightweight multi-value returns and declarative catalogs; prefer named fields.
+- **Class modifiers** (3.0) — `abstract interface class` for contracts, `final class` for closed impls.
+- **Extension types** (3.3) — zero-cost typed wrappers; candidate: id types (`GroupId` over raw `String`).
+- **Digit separators** (3.6), **wildcard variables `_`** (3.7), **null-aware elements** (3.8) — small, use when natural.
+- **Dot shorthands** (3.10) — `.running` where the context names the type.
+- **Private named parameters** (3.12) — `required this._dep` constructor injection without initializer lists.
+
+Mentoring rule: when reviewing or writing code, call out where a modern construct applies; each first use gets a one-line "why this over the old way."
+
 ## 8. Platform interop / method-channel track (learning goal)
 
 Three genuine channel jobs, sequenced from simplest to most advanced. Write the **iOS (Swift) side as stubs** even though you can't run it, so the contract is symmetric; validate compilation on CI macOS runners.
