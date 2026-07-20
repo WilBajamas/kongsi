@@ -10,6 +10,9 @@ Future<void> testExecutable(FutureOr<void> Function() testMain) async {
     config: AlchemistConfig(
       theme: AppTheme.light,
       platformGoldensConfig: PlatformGoldensConfig(enabled: !isCI),
+      // Cross-OS anti-aliasing shifts a handful of edge pixels; real UI
+      // changes move thousands.
+      ciGoldensConfig: const CiGoldensConfig(diffThreshold: 0.001),
     ),
     run: testMain,
   );
