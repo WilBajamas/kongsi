@@ -6,6 +6,12 @@ import 'package:kongsi/core/logger/app_logger.dart';
 import 'package:kongsi/core/network/auth_token_provider.dart';
 import 'package:kongsi/core/network/dio_client.dart';
 import 'package:kongsi/core/network/no_auth_token_provider.dart';
+import 'package:kongsi/core/sync/command_registry.dart';
+import 'package:kongsi/core/sync/command_sender.dart';
+import 'package:kongsi/core/sync/drift_outbox_repository.dart';
+import 'package:kongsi/core/sync/logging_command_sender.dart';
+import 'package:kongsi/core/sync/outbox_repository.dart';
+import 'package:kongsi/core/sync/sync_bloc.dart';
 import 'package:kongsi/core/system/clock.dart';
 import 'package:kongsi/core/system/uuid_generator.dart';
 import 'package:talker_flutter/talker_flutter.dart';
@@ -39,4 +45,28 @@ final dioProvider = Provider<Dio>((ref) {
     talker: ref.watch(talkerProvider),
     tokenProvider: ref.watch(authTokenProvider),
   );
+});
+
+// Built from the app-layer catalog, which core cannot import.
+final commandRegistryProvider = Provider<CommandRegistry>(
+  (ref) => throw UnimplementedError('override at bootstrap'),
+);
+
+final outboxRepositoryProvider = Provider<OutboxRepository>(
+  (ref) => DriftOutboxRepository(ref.watch(appDatabaseProvider)),
+);
+
+// Swap for the Supabase-backed sender once a real backend exists.
+final commandSenderProvider = Provider<CommandSender>(
+  (ref) => LoggingCommandSender(ref.watch(talkerProvider)),
+);
+
+final syncBlocProvider = Provider<SyncBloc>((ref) {
+  final bloc = SyncBloc(
+    outbox: ref.watch(outboxRepositoryProvider),
+    registry: ref.watch(commandRegistryProvider),
+    sender: ref.watch(commandSenderProvider),
+  );
+  ref.onDispose(bloc.close);
+  return bloc;
 });

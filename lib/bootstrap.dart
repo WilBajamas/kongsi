@@ -5,9 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kongsi/app/app_bloc_observer.dart';
+import 'package:kongsi/app/command_registrations.dart';
 import 'package:kongsi/core/config/app_config.dart';
 import 'package:kongsi/core/di/core_providers.dart';
 import 'package:kongsi/core/logger/app_logger.dart';
+import 'package:kongsi/core/sync/command_registry.dart';
+import 'package:kongsi/core/sync/sync_event.dart';
 import 'package:kongsi/features/groups/data/dev_seed.dart';
 import 'package:kongsi/main.dart';
 
@@ -39,6 +42,10 @@ void bootstrap(AppConfig config) {
             appConfigProvider.overrideWithValue(config),
             // Same instance the nets write to, so all logs share one stream.
             talkerProvider.overrideWithValue(talker),
+            // Registry built from the app-layer catalog; core can't see it.
+            commandRegistryProvider.overrideWithValue(
+              CommandRegistry(commandRegistrations),
+            ),
           ],
         );
 
@@ -52,8 +59,9 @@ void bootstrap(AppConfig config) {
 
         // Error Net 4: Bloc errors
         // ! Note: This is a global observer, so it will catch all bloc errors.
-        // ! This line is extremely dangerous and should and always be used here only.
-        // ! Because `Bloc.observer` is a mutable static state, it can be mutated from anywhere in this project.
+        // ! This line is extremely dangerous and should always be used
+        // ! here only. Because `Bloc.observer` is a mutable static state,
+        // ! it can be mutated from anywhere in this project.
         // ! SHOULD ONLY BE USED HERE.
         Bloc.observer = AppBlocObserver(talker);
 
@@ -63,6 +71,9 @@ void bootstrap(AppConfig config) {
             child: const MainApp(),
           ),
         );
+
+        // One drain per launch; connectivity-driven triggers come later.
+        container.read(syncBlocProvider).add(const SyncRequested());
       },
       talker.handle,
     ),
