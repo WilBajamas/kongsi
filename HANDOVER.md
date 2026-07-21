@@ -23,22 +23,22 @@ You (the next agent) are **mentoring** the developer through building **Kongsi**
 
 ## Where we are
 
-**Phase 0. Stages 0–10 complete. Walking skeleton now COMPLETE end-to-end — local slice + outbox + real Supabase sync, device-verified (create group → drain → row in Supabase, online *and* offline). Retry ceiling / dead-letter done. Connectivity trigger Step 1 (Dart) done; Step 2 (native EventChannel) is next.**
+**Phase 0. Stages 0–10 complete. Walking skeleton COMPLETE end-to-end — local slice + outbox + real Supabase sync, device-verified (create group → drain → row in Supabase, online *and* offline). Retry ceiling / dead-letter done. Connectivity trigger DONE (native EventChannel, both steps) and device-verified — outbox drains on reconnect without relaunch. Remaining Phase-0 work: Chunk C (Firebase App Distribution + CI release).**
 
 Real Supabase project exists; `config/dev.json` filled (gitignored). `groups` table created with **RLS disabled** for the skeleton (re-enabled when auth lands — real policies need `auth.uid()`).
 
-Branch `develop`. **5 commits this session, NOT yet pushed** (HEAD is 5 ahead of `origin/develop`) — push to run CI. Branch protection on `main` still not enabled (developer-side GitHub setting). Working tree clean except this file.
+Branch `develop`. **2 commits unpushed** (HEAD 2 ahead of `origin/develop`: charter consolidation + connectivity Step 2); earlier work already pushed. Push to run CI (and confirm the iOS Swift stub compiles on the macOS runner). Branch protection on `main` still not enabled (developer-side GitHub setting). Working tree clean except this file.
 
-Sandbox commands: `./.fvm/flutter_sdk/bin/flutter …` (fvm CLI not on sandbox PATH). Current state: analyze `--fatal-infos` clean, tests **18/18**, format clean.
+Sandbox commands: `./.fvm/flutter_sdk/bin/flutter …` (fvm CLI not on sandbox PATH). Current state: analyze `--fatal-infos` clean, tests **19/19**, format clean.
 
 ### Done this session (2026-07-21)
 
 - **Real Supabase sync — walking skeleton closed:** `SupabaseCommandSender` (dio → PostgREST `POST /rest/v1/{table}`, anon key in `apikey` + `Authorization`) replaced the logging stub via the one-line `commandSenderProvider` swap. `Command` gained `table` + `toRow()` (server shape, snake_case) kept **separate** from `toJson()` (outbox storage shape) so on-disk format and server schema evolve apart. Device-verified online *and* offline.
 - **Retry ceiling + dead-letter (`core/sync/send_failure.dart`):** `SendFailure` sealed pair — `CommandRejected` (4xx, counts) vs `DeliveryFailed` (offline/timeout/5xx, doesn't). Sender classifies (4xx except 401/429 → rejected). `SyncBloc` counts only the slip's own fault and `markFailed`s after `_maxAttempts = 5`, so a poison slip stops blocking FIFO; offline never dead-letters a good slip. Permanent branch is `on Object` (covers undecodable slips too). New `OutboxRepository.markFailed`. Device-verified with a force-fail CHECK constraint (5 fails → 6th silent).
 - **mocktail adopted** (dev dep, no codegen) + **charter §7-B** (mock for stub/verify, hand-rolled fake for stateful behaviour). Reference test `test/features/groups/groups_page_mocktail_reference_test.dart` shows when/thenAnswer/any/registerFallbackValue/verify+captureAny. `_FakeOutbox` deliberately stays a fake.
-- **Connectivity trigger — Step 1 (Dart only):** `core/connectivity/` — `ConnectivityMonitor` interface, `ConnectivityStatus` enum, `StubConnectivityMonitor` (emits nothing). `SyncBloc` subscribes → fires `SyncRequested` on online transitions, cancels sub in `close()`; `on<SyncRequested>` now `droppable()` (bloc_concurrency) so launch + reconnect drains can't race. Wired via `connectivityMonitorProvider` (stub). **Behaviour unchanged today** (stub emits nothing) — Step 2 swaps in the native EventChannel.
+- **Connectivity trigger — DONE (both steps):** `core/connectivity/` — `ConnectivityMonitor` interface + `ConnectivityStatus` enum + `EventChannelConnectivityMonitor` (wraps `EventChannel('kongsi/connectivity')`, `.distinct()`). Native `StreamHandler` on Android `ConnectivityManager` (`registerDefaultNetworkCallback`, posts to main thread, unregisters on cancel — `ConnectivityStreamHandler.kt` + `MainActivity.kt`); iOS Swift **stub** in `AppDelegate.swift` (compiles, emits nothing — real `NWPathMonitor` impl deferred). `SyncBloc` fires `SyncRequested` on online transitions; `on<SyncRequested>` uses `droppable()` (bloc_concurrency) so launch + reconnect drains can't race. **Manifest fix:** `INTERNET` (was **debug-only**!) + `ACCESS_NETWORK_STATE` added to `src/main`. Device-verified: airplane off → drains without relaunch. Dart wrapper unit-tested via mock stream handler. `StubConnectivityMonitor` deleted after the swap.
 - **Comment trim** across the sync system (why-only, no paragraphs). `LoggingCommandSender` kept and reframed as the documented example of the `CommandSender` swap seam (see comment on `commandSenderProvider`).
-- **Tests: 18** (was 11) — +3 SyncBloc (retry ceiling + connectivity), +1 mocktail reference; round-trip guard still there.
+- **Tests: 19** (was 11) — +3 SyncBloc (retry ceiling + connectivity), +1 mocktail reference, +1 connectivity wrapper; round-trip guard still there.
 
 ### Foundations already in place (earlier sessions — now in code/ADRs)
 
@@ -54,6 +54,7 @@ Stages 0–10; global error capture (4 nets incl. `Bloc.observer`, `lib/bootstra
 - **RLS 401 was proof, not failure:** the request reached PostgREST and was rejected only at the RLS gate → whole pipeline correct. RLS disabled for the auth-less skeleton (real policies need `auth.uid()`).
 - **droppable transformer** adopted once there were two sync triggers (launch + reconnect), so overlapping drains can't race on the same slips.
 - **mocktail over mockito** — no codegen, stays out of the analyzer-clash ledger; mock-vs-fake is a deliberate per-double call (§7-B).
+- **`INTERNET` was declared only in the *debug* manifest** (Flutter template default) — dev builds reached Supabase, but a release/profile build would have shipped with no network permission. Moved to `src/main` with `ACCESS_NETWORK_STATE`. Also: native EventChannel callbacks arrive on a binder thread → must hop to the main thread before touching the `EventSink`.
 
 **Earlier sessions:**
 
@@ -68,11 +69,10 @@ Stages 0–10; global error capture (4 nets incl. `Bloc.observer`, `lib/bootstra
 
 ## What's next
 
-1. **Connectivity trigger — Step 2 (native EventChannel):** the real `EventChannelConnectivityMonitor` wrapping `EventChannel('kongsi/connectivity').receiveBroadcastStream()`; Android Kotlin `StreamHandler` on `ConnectivityManager` (register/unregister a network callback); iOS Swift **stub** that compiles on the CI macOS runner. Then swap `connectivityMonitorProvider` (one line) and device-verify: airplane-mode → create → network on → drains **without relaunch**. (Charter §8 exercise 2; Step 1's Dart seam + tests already in place.)
-2. **Chunk C:** Firebase project → App Distribution → Bitrise + fastlane (ADR-021). Closes remaining Phase-0 DoD boxes.
-3. **Push the 5 unpushed commits** so CI runs (HEAD is 5 ahead of `origin/develop`).
-4. **Pending small items:** MVVM-command verdict ADR; migrate `groups_page_test.dart` to mocktail + retire hand-rolled `MockGroupsRepository` (keep `_FakeOutbox` as a fake — developer exercise); extension-types-for-ids (`GroupId`/`UserId`, charter §7-A candidate); backoff (deferred, see war stories); `logging_command_sender.dart` deletable if the swap example is no longer wanted; branch protection on `main`.
-5. **End of Phase 0 — consolidation (now specced in charter §6-A "Post-Phase-0 consolidation"):** (a) comprehensive technical summary; (b) per-module flow diagrams (mermaid in `docs/diagrams/`, never one big piece); (c) **one-week senior→lead exam** authored by the mentor — written what/why/how, diagram-from-memory, code katas, closing viva. Each its own session, after DoD is fully ticked.
+1. **Chunk C (the last Phase-0 chunk):** Firebase project → **App Distribution** → Bitrise + fastlane (ADR-021). Closes remaining Phase-0 DoD boxes (auto-deploy a staging build to testers). *In planning now.*
+2. **Push the 2 unpushed commits** so CI runs (and confirms the iOS Swift stub compiles on the macOS runner).
+3. **Pending small items:** MVVM-command verdict ADR; migrate `groups_page_test.dart` to mocktail + retire hand-rolled `MockGroupsRepository` (keep `_FakeOutbox` as a fake — developer exercise); extension-types-for-ids (`GroupId`/`UserId`, charter §7-A candidate); backoff (deferred, see war stories); `logging_command_sender.dart` deletable if the swap example is no longer wanted; branch protection on `main`.
+4. **End of Phase 0 — consolidation (now specced in charter §6-A "Post-Phase-0 consolidation"):** (a) comprehensive technical summary; (b) per-module flow diagrams (mermaid in `docs/diagrams/`, never one big piece); (c) **one-week senior→lead exam** authored by the mentor — written what/why/how, diagram-from-memory, code katas, closing viva. Each its own session, after DoD is fully ticked.
 
 ## ADR state (real files in `docs/adr/`, 001–021)
 
