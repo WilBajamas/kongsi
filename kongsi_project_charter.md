@@ -240,7 +240,15 @@ Guardrails, given a tempting mind map full of concepts:
 - **Don't start the Compose port in parallel.** Flutter proves the domain first (Phase 8).
 - **Don't skip the walking skeleton to "save time."** It *is* the time-saver.
 
----
+### Post-Phase-0 consolidation (after DoD, before Phase 1)
+
+Phase 0 ends with understanding, not just working code. Three deliverables, in order — each gets its own dedicated session:
+
+1. **Technical summary** — the comprehensive what/why/decisions write-up (interview-oriented), sourced from ADRs, git log, and the handover war stories.
+
+2. **Flow diagrams — one per module, never one big piece.** For each module (bootstrap/DI + error nets, sync/outbox, groups feature slice, network stack, database/migrations), a diagram showing how the classes/files link and the flow top to bottom: entry point → layers → side effects. Rules: each diagram fits one screen; where modules touch (sync → outbox table, feature → registry catalog), reference the other diagram instead of absorbing it. Stored as mermaid in markdown under `docs/diagrams/` so they diff in git and rot is visible in review.
+
+3. **The Phase 0 exam — one week, senior→lead level.** Authored by the mentor, sat by the developer. It must force the what/why/how of everything built: design patterns used (and rejected, and why), architecture (layering, DI/override pattern, seams), theory (at-least-once + idempotency, FIFO/dead-letter, offline-first), the practicals, and every dependency's justification (incl. the analyzer-clash ledger). Format is mixed on purpose: written what/why/how questions, diagram-from-memory tasks, code katas (e.g. add a new command type end-to-end, swap a seam under test), and a closing viva where the mentor attacks decisions and the developer defends trade-offs live. Pace: roughly one module per day, viva last. Open book — referencing the code is allowed; the bar is explaining every decision and its trade-offs, not recall.
 
 ## 7. State management & patterns (deliberate assignments)
 

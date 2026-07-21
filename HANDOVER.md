@@ -72,7 +72,7 @@ Stages 0–10; global error capture (4 nets incl. `Bloc.observer`, `lib/bootstra
 2. **Chunk C:** Firebase project → App Distribution → Bitrise + fastlane (ADR-021). Closes remaining Phase-0 DoD boxes.
 3. **Push the 5 unpushed commits** so CI runs (HEAD is 5 ahead of `origin/develop`).
 4. **Pending small items:** MVVM-command verdict ADR; migrate `groups_page_test.dart` to mocktail + retire hand-rolled `MockGroupsRepository` (keep `_FakeOutbox` as a fake — developer exercise); extension-types-for-ids (`GroupId`/`UserId`, charter §7-A candidate); backoff (deferred, see war stories); `logging_command_sender.dart` deletable if the swap example is no longer wanted; branch protection on `main`.
-5. **End of Phase 0:** developer wants a **comprehensive technical summary of all of Phase 0** (what/why/decisions, interview-oriented) — one dedicated session *after* DoD is fully ticked, sourced from ADRs + git log + the war stories above.
+5. **End of Phase 0 — consolidation (now specced in charter §6-A "Post-Phase-0 consolidation"):** (a) comprehensive technical summary; (b) per-module flow diagrams (mermaid in `docs/diagrams/`, never one big piece); (c) **one-week senior→lead exam** authored by the mentor — written what/why/how, diagram-from-memory, code katas, closing viva. Each its own session, after DoD is fully ticked.
 
 ## ADR state (real files in `docs/adr/`, 001–021)
 
