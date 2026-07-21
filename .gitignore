@@ -51,6 +51,16 @@ app.*.map.json
 /config/*.json
 !/config/*.example.json
 
+# CI-decoded secret (service account key) — only ever written on the runner.
+/firebase-service-account.json
+
+# fastlane artifacts + locally-installed gems
+android/fastlane/report.xml
+android/fastlane/Preview.html
+android/fastlane/README.md
+android/.bundle/
+android/vendor/
+
 # Android
 android/.kotlin/
 

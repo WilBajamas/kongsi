@@ -1,0 +1,20 @@
+default_platform(:android)
+
+# fastlane is the release-automation layer (ADR-021). It only *uploads* here —
+# the Flutter build happens in the Bitrise workflow, since fastlane's gradle
+# actions don't understand a Flutter build.
+platform :android do
+  desc "Upload the staging APK to Firebase App Distribution"
+  lane :distribute_staging do
+    firebase_app_distribution(
+      app: ENV["FIREBASE_STAGING_APP_ID"],
+      service_credentials_file: ENV["FIREBASE_SERVICE_ACCOUNT_PATH"],
+      android_artifact_type: "APK",
+      # Relative to android/, where this lane runs; the build output is at the
+      # repo root.
+      android_artifact_path: "../build/app/outputs/flutter-apk/app-staging-release.apk",
+      groups: "internal",
+      release_notes: "Staging build #{ENV['BITRISE_BUILD_NUMBER']} · #{ENV['BITRISE_GIT_COMMIT']}",
+    )
+  end
+end

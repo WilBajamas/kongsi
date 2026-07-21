@@ -1,0 +1,64 @@
+format_version: "13"
+default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
+project_type: flutter
+
+app:
+  envs:
+    # Keep in sync with .fvmrc and the GitHub Actions FLUTTER_VERSION.
+    - FLUTTER_VERSION: "3.44.0"
+
+# Bitrise runs release/distribution only (ADR-021); GitHub Actions is the PR
+# gate. So the sole trigger is a push to develop -> distribute a staging build.
+trigger_map:
+  - push_branch: develop
+    workflow: distribute_staging
+
+workflows:
+  distribute_staging:
+    steps:
+      - activate-ssh-key@4: {}
+      - git-clone@8:
+          inputs:
+            # Full history so the ADR-022 build number (git commit count) is
+            # correct, not a shallow-clone undercount.
+            - clone_depth: "-1"
+      - flutter-installer@0:
+          inputs:
+            - version: $FLUTTER_VERSION
+            - is_update: "false"
+      - script@1:
+          title: Decode secret files
+          inputs:
+            - content: |-
+                #!/usr/bin/env bash
+                set -euo pipefail
+                # Secrets are base64 env vars; write them back to real files.
+                echo "$STAGING_CONFIG_B64" | base64 --decode > config/staging.json
+                echo "$FIREBASE_SERVICE_ACCOUNT_B64" | base64 --decode > "$BITRISE_SOURCE_DIR/firebase-service-account.json"
+                envman add --key FIREBASE_SERVICE_ACCOUNT_PATH --value "$BITRISE_SOURCE_DIR/firebase-service-account.json"
+      - script@1:
+          title: Build staging APK
+          inputs:
+            - content: |-
+                #!/usr/bin/env bash
+                set -euo pipefail
+                flutter pub get
+                # sqlite3 ships its native lib via a Dart build hook; off by default.
+                flutter config --enable-native-assets
+                BUILD_NUMBER=$(git rev-list --count HEAD)
+                echo "Build number (git commit count): $BUILD_NUMBER"
+                flutter build apk --release --flavor staging \
+                  -t lib/main_staging.dart \
+                  --dart-define-from-file=config/staging.json \
+                  --build-number="$BUILD_NUMBER" \
+                  --build-name=0.1.0
+      - script@1:
+          title: Upload to Firebase App Distribution
+          inputs:
+            - content: |-
+                #!/usr/bin/env bash
+                set -euo pipefail
+                cd android
+                bundle config set --local path 'vendor/bundle'
+                bundle install
+                bundle exec fastlane distribute_staging
