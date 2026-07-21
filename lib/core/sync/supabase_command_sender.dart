@@ -3,9 +3,8 @@ import 'package:kongsi/core/sync/command.dart';
 import 'package:kongsi/core/sync/command_sender.dart';
 import 'package:kongsi/core/sync/send_failure.dart';
 
-/// Pushes a command to Supabase via PostgREST. Stays generic: it asks each
-/// command for its [Command.table] and [Command.toRow], so a new command type
-/// needs no change here.
+/// Pushes a command to Supabase via PostgREST. Generic — a new command type
+/// needs no change here, since each command carries its own table and row.
 class SupabaseCommandSender implements CommandSender {
   const SupabaseCommandSender({required this.dio, required this.anonKey});
 
@@ -14,18 +13,16 @@ class SupabaseCommandSender implements CommandSender {
 
   @override
   Future<void> send(Command command) async {
-    // PostgREST needs both headers. With no user yet, both carry the anon key;
-    // once auth lands, AuthInterceptor overrides Authorization with the user's
-    // JWT while apikey stays the anon key.
     try {
       await dio.post<void>(
         '/rest/v1/${command.table}',
         data: command.toRow(),
         options: Options(
           headers: {
+            // Both carry the anon key for now; AuthInterceptor swaps a user
+            // JWT into Authorization once auth lands.
             'apikey': anonKey,
             'Authorization': 'Bearer $anonKey',
-            // Don't ask PostgREST to echo the inserted row back — unused.
             'Prefer': 'return=minimal',
           },
         ),
@@ -35,10 +32,8 @@ class SupabaseCommandSender implements CommandSender {
     }
   }
 
-  // A 4xx means the server refused THIS command (bad data, not bad luck), so
-  // it counts toward the ceiling. Everything else — offline, timeout, 5xx — is
-  // transient and worth retrying without blaming the slip. 401 is left to the
-  // auth refresh; 429 is rate-limiting, not a bad slip.
+  // 4xx = the server refused this slip (counts against the ceiling); everything
+  // else is transient. 401 → auth refresh, 429 → rate limit.
   SendFailure _classify(DioException e) {
     final status = e.response?.statusCode;
     final rejected =

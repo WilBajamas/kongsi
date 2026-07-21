@@ -15,8 +15,7 @@ final class SyncInProgress extends SyncState {
   const SyncInProgress();
 }
 
-/// The last drain halted on a failing slip. Nothing renders this yet;
-/// a sync-status indicator will, later.
+/// The last drain halted on a failing slip.
 final class SyncFailure extends SyncState {
   const SyncFailure(this.error);
 

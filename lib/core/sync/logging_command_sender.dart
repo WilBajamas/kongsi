@@ -2,8 +2,10 @@ import 'package:kongsi/core/sync/command.dart';
 import 'package:kongsi/core/sync/command_sender.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 
-/// Stand-in until a backend exists: "sends" a command by logging it.
-/// Lets the whole drain pipeline run and be verified before Supabase is up.
+/// A drop-in [CommandSender] that logs each command instead of pushing it.
+/// Kept as the worked example of the sender seam: swap it for (or back from)
+/// the Supabase sender in one line at `commandSenderProvider` — handy for
+/// watching the drain without a backend.
 class LoggingCommandSender implements CommandSender {
   const LoggingCommandSender(this._talker);
 
