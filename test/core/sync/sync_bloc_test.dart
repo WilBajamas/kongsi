@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kongsi/core/connectivity/connectivity_status.dart';
 import 'package:kongsi/core/database/app_database.dart';
 import 'package:kongsi/core/database/tables/outbox_table.dart';
 import 'package:kongsi/core/sync/command.dart';
@@ -91,11 +93,27 @@ class _OkSender implements CommandSender {
   Future<void> send(Command command) async => sent++;
 }
 
+/// Most tests don't care about connectivity, so it defaults to a stream that
+/// never emits — the drain is driven by explicit SyncRequested events instead.
+SyncBloc _blocWith(
+  _FakeOutbox outbox,
+  CommandSender sender, {
+  Stream<ConnectivityStatus> connectivity =
+      const Stream<ConnectivityStatus>.empty(),
+}) {
+  return SyncBloc(
+    outbox: outbox,
+    registry: _registry,
+    sender: sender,
+    connectivity: connectivity,
+  );
+}
+
 void main() {
   test('a successful send deletes the slip', () async {
     final outbox = _FakeOutbox([_pendingSlip(1)]);
     final sender = _OkSender();
-    final bloc = SyncBloc(outbox: outbox, registry: _registry, sender: sender);
+    final bloc = _blocWith(outbox, sender);
     addTearDown(bloc.close);
 
     bloc.add(const SyncRequested());
@@ -108,7 +126,7 @@ void main() {
   test('a rejected slip is dead-lettered exactly on the 5th attempt', () async {
     final outbox = _FakeOutbox([_pendingSlip(1)]);
     final sender = _ThrowingSender(const CommandRejected('nope'));
-    final bloc = SyncBloc(outbox: outbox, registry: _registry, sender: sender);
+    final bloc = _blocWith(outbox, sender);
     addTearDown(bloc.close);
 
     // First four drains: counted, but not yet dead-lettered.
@@ -136,11 +154,7 @@ void main() {
     () async {
       final outbox = _FakeOutbox([_pendingSlip(1)]);
       final sender = _ThrowingSender(const DeliveryFailed('offline'));
-      final bloc = SyncBloc(
-        outbox: outbox,
-        registry: _registry,
-        sender: sender,
-      );
+      final bloc = _blocWith(outbox, sender);
       addTearDown(bloc.close);
 
       for (var i = 0; i < 10; i++) {
@@ -157,4 +171,50 @@ void main() {
       expect(outbox.markedFailed, isEmpty);
     },
   );
+
+  group('connectivity trigger', () {
+    test('a return to online drains the outbox', () async {
+      final outbox = _FakeOutbox([_pendingSlip(1)]);
+      final sender = _OkSender();
+      final connectivity = StreamController<ConnectivityStatus>();
+      final bloc = _blocWith(outbox, sender, connectivity: connectivity.stream);
+      addTearDown(bloc.close);
+      addTearDown(connectivity.close);
+
+      connectivity.add(ConnectivityStatus.online);
+      await pumpEventQueue();
+
+      expect(sender.sent, 1);
+      expect(outbox.deleted, [1]);
+    });
+
+    test('going offline does not drain', () async {
+      final outbox = _FakeOutbox([_pendingSlip(1)]);
+      final sender = _OkSender();
+      final connectivity = StreamController<ConnectivityStatus>();
+      final bloc = _blocWith(outbox, sender, connectivity: connectivity.stream);
+      addTearDown(bloc.close);
+      addTearDown(connectivity.close);
+
+      connectivity.add(ConnectivityStatus.offline);
+      await pumpEventQueue();
+
+      expect(sender.sent, 0);
+      expect(outbox.deleted, isEmpty);
+    });
+
+    test('a closed bloc stops draining on reconnect', () async {
+      final outbox = _FakeOutbox([_pendingSlip(1)]);
+      final sender = _OkSender();
+      final connectivity = StreamController<ConnectivityStatus>();
+      final bloc = _blocWith(outbox, sender, connectivity: connectivity.stream);
+      addTearDown(connectivity.close);
+
+      await bloc.close();
+      connectivity.add(ConnectivityStatus.online);
+      await pumpEventQueue();
+
+      expect(sender.sent, 0, reason: 'a closed bloc must not drain');
+    });
+  });
 }

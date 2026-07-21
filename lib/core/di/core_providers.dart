@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kongsi/core/config/app_config.dart';
+import 'package:kongsi/core/connectivity/connectivity_monitor.dart';
+import 'package:kongsi/core/connectivity/stub_connectivity_monitor.dart';
 import 'package:kongsi/core/database/app_database.dart';
 import 'package:kongsi/core/logger/app_logger.dart';
 import 'package:kongsi/core/network/auth_token_provider.dart';
@@ -56,6 +58,10 @@ final outboxRepositoryProvider = Provider<OutboxRepository>(
   (ref) => DriftOutboxRepository(ref.watch(appDatabaseProvider)),
 );
 
+// One swap seam for the whole drain: SyncBloc pushes through whatever this
+// returns, so trading backends is a one-line change here. To watch the queue
+// without hitting Supabase, swap the body for:
+//   return LoggingCommandSender(ref.watch(talkerProvider));
 final commandSenderProvider = Provider<CommandSender>((ref) {
   final config = ref.watch(appConfigProvider);
   return SupabaseCommandSender(
@@ -64,11 +70,17 @@ final commandSenderProvider = Provider<CommandSender>((ref) {
   );
 });
 
+// Stub until the native EventChannel lands (step 2); swap this one line then.
+final connectivityMonitorProvider = Provider<ConnectivityMonitor>(
+  (ref) => const StubConnectivityMonitor(),
+);
+
 final syncBlocProvider = Provider<SyncBloc>((ref) {
   final bloc = SyncBloc(
     outbox: ref.watch(outboxRepositoryProvider),
     registry: ref.watch(commandRegistryProvider),
     sender: ref.watch(commandSenderProvider),
+    connectivity: ref.watch(connectivityMonitorProvider).onStatusChange,
   );
   ref.onDispose(bloc.close);
   return bloc;
