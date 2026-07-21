@@ -12,6 +12,11 @@ abstract interface class OutboxRepository {
   Future<void> delete(int id);
 
   /// Called after a failed push: keeps the slip, counts the attempt
-  /// (a future retry ceiling reads this number).
+  /// (the retry ceiling reads this number).
   Future<void> recordFailure(int id);
+
+  /// Called once the ceiling is hit: parks the slip as `failed` so it drops
+  /// out of getPending and stops blocking the queue. Dead-letter — nothing
+  /// retries it automatically.
+  Future<void> markFailed(int id);
 }

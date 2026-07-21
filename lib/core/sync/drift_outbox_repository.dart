@@ -31,4 +31,11 @@ class DriftOutboxRepository implements OutboxRepository {
       OutboxCompanion.custom(attempts: _db.outbox.attempts + const Constant(1)),
     );
   }
+
+  @override
+  Future<void> markFailed(int id) {
+    return (_db.update(_db.outbox)..where((t) => t.id.equals(id))).write(
+      const OutboxCompanion(status: Value(OutboxStatus.failed)),
+    );
+  }
 }
