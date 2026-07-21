@@ -51,4 +51,5 @@ App Distribution on push to `develop`.
 ## Docs
 
 - [Architecture Decision Records](docs/adr/README.md)
+- [Learning Log](docs/learning-log.md) — concepts worked through + open gaps
 - [Definition of Done](docs/definition-of-done.md)
