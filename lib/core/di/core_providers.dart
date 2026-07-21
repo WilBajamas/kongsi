@@ -9,8 +9,8 @@ import 'package:kongsi/core/network/no_auth_token_provider.dart';
 import 'package:kongsi/core/sync/command_registry.dart';
 import 'package:kongsi/core/sync/command_sender.dart';
 import 'package:kongsi/core/sync/drift_outbox_repository.dart';
-import 'package:kongsi/core/sync/logging_command_sender.dart';
 import 'package:kongsi/core/sync/outbox_repository.dart';
+import 'package:kongsi/core/sync/supabase_command_sender.dart';
 import 'package:kongsi/core/sync/sync_bloc.dart';
 import 'package:kongsi/core/system/clock.dart';
 import 'package:kongsi/core/system/uuid_generator.dart';
@@ -56,10 +56,13 @@ final outboxRepositoryProvider = Provider<OutboxRepository>(
   (ref) => DriftOutboxRepository(ref.watch(appDatabaseProvider)),
 );
 
-// Swap for the Supabase-backed sender once a real backend exists.
-final commandSenderProvider = Provider<CommandSender>(
-  (ref) => LoggingCommandSender(ref.watch(talkerProvider)),
-);
+final commandSenderProvider = Provider<CommandSender>((ref) {
+  final config = ref.watch(appConfigProvider);
+  return SupabaseCommandSender(
+    dio: ref.watch(dioProvider),
+    anonKey: config.supabaseAnonKey,
+  );
+});
 
 final syncBlocProvider = Provider<SyncBloc>((ref) {
   final bloc = SyncBloc(

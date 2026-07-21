@@ -27,4 +27,15 @@ class CreateGroupCommand implements Command {
 
   @override
   Map<String, dynamic> toJson() => _$CreateGroupCommandToJson(this);
+
+  @override
+  String get table => 'groups';
+
+  @override
+  Map<String, dynamic> toRow() => {
+    'id': groupId,
+    'name': name,
+    'currency': currency,
+    'created_at': createdAt.toIso8601String(),
+  };
 }
