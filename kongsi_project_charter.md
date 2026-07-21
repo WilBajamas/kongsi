@@ -271,6 +271,17 @@ Write idiomatic **modern Dart** on purpose — when a Dart 3.x construct fits, p
 
 Mentoring rule: when reviewing or writing code, call out where a modern construct applies; each first use gets a one-line "why this over the old way."
 
+## 7-B. Test doubles (deliberate practice, all phases)
+
+Pick the double to fit the job — don't default to one tool for everything.
+
+- **mocktail** is the default for a collaborator a test only needs to **stub or verify** (`when(...).thenAnswer(...)`, `verify(...).called(n)`). Chosen over `mockito` because it needs **no codegen** — no `@GenerateMocks`, no `build_runner`, no generated `.mocks.dart` — so it stays clear of the analyzer-clash ledger (see §19 / handover). Null-safe, runtime-only.
+- **Hand-rolled fake** when the double needs **real, evolving behaviour** — an in-memory DB, a stateful queue — where scripting canned returns per call would be brittle and unreadable.
+
+Rule of thumb: verifying an **interaction** → mock; standing in for **stateful behaviour** → fake. (Taxonomy: a *fake* has a working simplified implementation; a *mock* has none and only records/verifies calls.)
+
+Mocktail specifics worth knowing: use `any()`/`captureAny()` as argument matchers, and call `registerFallbackValue(...)` once (in `setUpAll`) for any **custom type** used with `any()`. `captureAny()` + `verify(...).captured` inspects what a collaborator was actually called with.
+
 ## 8. Platform interop / method-channel track (learning goal)
 
 Three genuine channel jobs, sequenced from simplest to most advanced. Write the **iOS (Swift) side as stubs** even though you can't run it, so the contract is symmetric; validate compilation on CI macOS runners.
