@@ -16,7 +16,10 @@ trigger_map:
 workflows:
   distribute_staging:
     steps:
-      - activate-ssh-key@4: {}
+      # Only runs for SSH-based repo access; skipped when Bitrise clones via
+      # the GitHub App token (our case), so it can't fail on a missing key.
+      - activate-ssh-key@4:
+          run_if: '{{getenv "SSH_RSA_PRIVATE_KEY" | ne ""}}'
       - git-clone@8:
           inputs:
             # Full history so the ADR-022 build number (git commit count) is
