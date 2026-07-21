@@ -1,7 +1,7 @@
 # Kongsi — Session Handover
 
 > Temporary working doc to hand context to a fresh agent session. Safe to delete once absorbed.
-> Last updated: 2026-07-21.
+> Last updated: 2026-07-22.
 
 ## How to use this file
 
@@ -29,7 +29,7 @@ Real Supabase **and Firebase** projects exist; `config/dev.json` filled (gitigno
 
 **Branch protection on `main` — DEFERRED (external constraint, not an oversight).** GitHub gates branch-protection/rulesets behind a paid tier for *private* repos, and this repo is Free + private. Revisit on going public or GitHub Pro; meanwhile the PR-into-`main` flow is followed by discipline. The control was chosen; the platform tier gated it — documented rather than skipped.
 
-Branch `develop`. **1 commit unpushed** (bootstrap/README). Working tree clean except this file. analyze `--fatal-infos` clean, tests **19/19**, format clean. Sandbox: `./.fvm/flutter_sdk/bin/flutter …` (fvm CLI not on sandbox PATH).
+Branch `develop`. A few recent **doc commits unpushed** — push `develop` to sync origin (and let CI confirm the iOS Swift stub compiles on the macOS runner). Working tree clean except this file. analyze `--fatal-infos` clean, tests **19/19**, format clean. Sandbox: `./.fvm/flutter_sdk/bin/flutter …` (fvm CLI not on sandbox PATH).
 
 ### Done this session (2026-07-21 → 22)
 
@@ -49,7 +49,7 @@ Stages 0–10; global error capture (4 nets incl. `Bloc.observer`, `lib/bootstra
 
 ## Key decisions / war stories (interview material — keep)
 
-**This session (2026-07-21):**
+**This session (2026-07-21 → 22):**
 
 - **Command→row mapping lives on the command (`table`/`toRow`), not a repository.** A remote repository would need a type-dispatch table coupling sync→features; keeping each command's destination on itself keeps the drain a generic pipe. Repository approach noted as the natural refactor if a command ever needs real remote logic.
 - **`toJson` (outbox storage) vs `toRow` (server) kept separate on purpose** — welding them would let a server column rename break slips already queued on a user's disk.
@@ -77,9 +77,9 @@ Stages 0–10; global error capture (4 nets incl. `Bloc.observer`, `lib/bootstra
 2. **Push the 1 unpushed commit.**
 3. **Pending small items:** MVVM-command verdict ADR; migrate `groups_page_test.dart` to mocktail + retire hand-rolled `MockGroupsRepository` (keep `_FakeOutbox` as a fake — developer exercise); extension-types-for-ids (`GroupId`/`UserId`, charter §7-A candidate); backoff (deferred, see war stories); `logging_command_sender.dart` deletable if the swap example is no longer wanted; `.gitattributes` to pin `*.sh` to LF (optional hardening); **branch protection — deferred by plan tier (see "Where we are").**
 
-## ADR state (real files in `docs/adr/`, 001–021)
+## ADR state (real files in `docs/adr/`, 001–022)
 
-001 Supabase+Firebase · 002 Riverpod(DI)+Bloc/Cubit+Command · 003 offline SSOT+outbox · 004 no cert pinning · 005 Drift · 006 LWW *(Proposed)* · 007 deep-link *(Open, Phase 4)* · 008 background sync · 009 error model · **010 go_router — Superseded by 020** · 011 package id · 012 toolchain · 013 config · 014 clock/uuid · 015 minSdk 26 · 016 iOS 16 · 017 import-boundary *(Deferred)* · 018 token-refresh ownership · 019 localization · 020 routing=auto_route · 021 CI/CD (Actions+Bitrise+fastlane).
+001 Supabase+Firebase · 002 Riverpod(DI)+Bloc/Cubit+Command · 003 offline SSOT+outbox · 004 no cert pinning · 005 Drift · 006 LWW *(Proposed)* · 007 deep-link *(Open, Phase 4)* · 008 background sync · 009 error model · **010 go_router — Superseded by 020** · 011 package id · 012 toolchain · 013 config · 014 clock/uuid · 015 minSdk 26 · 016 iOS 16 · 017 import-boundary *(Deferred)* · 018 token-refresh ownership · 019 localization · 020 routing=auto_route · 021 CI/CD (Actions+Bitrise+fastlane) · 022 versioning/build-numbers (git commit count, CI-injected).
 
 ## Environment gotchas
 
