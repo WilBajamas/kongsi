@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kongsi/core/config/app_config.dart';
 import 'package:kongsi/core/connectivity/connectivity_monitor.dart';
-import 'package:kongsi/core/connectivity/stub_connectivity_monitor.dart';
+import 'package:kongsi/core/connectivity/event_channel_connectivity_monitor.dart';
 import 'package:kongsi/core/database/app_database.dart';
 import 'package:kongsi/core/logger/app_logger.dart';
 import 'package:kongsi/core/network/auth_token_provider.dart';
@@ -70,9 +70,8 @@ final commandSenderProvider = Provider<CommandSender>((ref) {
   );
 });
 
-// Stub until the native EventChannel lands (step 2); swap this one line then.
 final connectivityMonitorProvider = Provider<ConnectivityMonitor>(
-  (ref) => const StubConnectivityMonitor(),
+  (ref) => const EventChannelConnectivityMonitor(),
 );
 
 final syncBlocProvider = Provider<SyncBloc>((ref) {
