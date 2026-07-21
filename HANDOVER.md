@@ -73,7 +73,7 @@ Stages 0–10; global error capture (4 nets incl. `Bloc.observer`, `lib/bootstra
 
 ## What's next
 
-1. **Post-Phase-0 consolidation (charter §6-A) — the main event now that Phase 0 is essentially done.** Three deliverables, each its own session: (a) comprehensive technical summary; (b) per-module flow diagrams (mermaid in `docs/diagrams/`, never one big piece); (c) **one-week senior→lead exam** — written what/why/how, diagram-from-memory, code katas, closing viva, **open book**.
+1. **Post-Phase-0 consolidation (charter §6-A) — the main event now that Phase 0 is essentially done.** Three deliverables, each its own session: (a) comprehensive technical summary; (b) per-module flow diagrams (mermaid in `docs/diagrams/`, never one big piece); (c) **self-paced senior→lead exam** — organized by topic section (no time limit), each with written what/why/how + diagram-from-memory + code katas + a short viva, **open book**.
 2. **Push the 1 unpushed commit.**
 3. **Pending small items:** MVVM-command verdict ADR; migrate `groups_page_test.dart` to mocktail + retire hand-rolled `MockGroupsRepository` (keep `_FakeOutbox` as a fake — developer exercise); extension-types-for-ids (`GroupId`/`UserId`, charter §7-A candidate); backoff (deferred, see war stories); `logging_command_sender.dart` deletable if the swap example is no longer wanted; `.gitattributes` to pin `*.sh` to LF (optional hardening); **branch protection — deferred by plan tier (see "Where we are").**
 
