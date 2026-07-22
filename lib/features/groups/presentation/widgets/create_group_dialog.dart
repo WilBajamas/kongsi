@@ -3,7 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:kongsi/app/command/command.dart';
+import 'package:kongsi/app/command/cubits/command_cubit.dart';
+import 'package:kongsi/app/command/cubits/command_state.dart';
 import 'package:kongsi/features/groups/groups_providers.dart';
 import 'package:kongsi/l10n/l10n_extension.dart';
 
@@ -17,12 +18,12 @@ class CreateGroupDialog extends ConsumerStatefulWidget {
 class _CreateGroupDialogState extends ConsumerState<CreateGroupDialog> {
   final _name = TextEditingController();
   final _currency = TextEditingController(text: 'MYR');
-  late final Command _submit;
+  late final CommandCubit _submit;
 
   @override
   void initState() {
     super.initState();
-    _submit = Command(
+    _submit = CommandCubit(
       () => ref.read(createGroupUseCaseProvider)(
         name: _name.text.trim(),
         currency: _currency.text.trim(),
@@ -49,7 +50,7 @@ class _CreateGroupDialogState extends ConsumerState<CreateGroupDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return BlocBuilder<Command, CommandState>(
+    return BlocBuilder<CommandCubit, CommandState>(
       bloc: _submit,
       builder: (context, state) => AlertDialog(
         title: Text(l10n.createGroupTitle),
