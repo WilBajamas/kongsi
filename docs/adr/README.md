@@ -24,5 +24,6 @@
 | [020](ADR-020-routing-auto-route.md) | Routing = auto_route (supersedes ADR-010); deep-link-ready | Accepted |
 | [021](ADR-021-cicd-tooling.md) | CI/CD split: GitHub Actions (PR gate) + Bitrise (release) + fastlane | Accepted |
 | [022](ADR-022-versioning-build-numbers.md) | Versioning: semantic name + build number = git commit count (CI-injected) | Accepted |
+| [023](ADR-023-mvvm-command-verdict.md) | MVVM `CommandCubit` vs plain submit flag | **Open** — verdict at 2nd use site (Phase 2) |
 
-**ADR-007** is open, deferred to its Phase 4 spike by design. **ADR-017** is deferred pending tooling maturity — see the ADR for what was tried.
+**ADR-007** is open, deferred to its Phase 4 spike by design. **ADR-017** is deferred pending tooling maturity — see the ADR for what was tried. **ADR-023** is open by design — the verdict is taken when the MVVM Command reaches its second use site (Phase 2 add-expense).

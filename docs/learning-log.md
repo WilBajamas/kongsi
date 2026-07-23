@@ -31,6 +31,13 @@ exam (charter §6-A). Living doc; append as you go.
 
 - **Mock vs fake (test-double taxonomy).** A *fake* has real, simplified behaviour (stateful stand-in — e.g. an in-memory outbox). A *mock* has none; you script calls and *verify interactions*. Choose per double: interaction check → mock; stateful behaviour → fake. **mocktail** (no codegen → stays out of the analyzer-clash ledger) over mockito.
 
+### Dependency management — the analyzer ceiling
+
+- **The analyzer version is not a knob you set — it's a ceiling your heaviest code-gen dependency sets.** `analyzer` is never a direct dependency; each generator (`drift_dev`, `json_serializable`, `auto_route_generator`…) pulls it in transitively, and pub resolves the *one* version that satisfies them all. `drift_dev` demands `analyzer ^13`, so **13 is the ceiling** everything else must fit under.
+- **You can't "lower the analyzer" to fit more generators.** The only levers are: downgrade `drift_dev` (freezes the app's DB spine on an old version to house a testing/boilerplate convenience — priorities backwards), or a `dependency_overrides` that bypasses the *constraint* but not the *code*, so `build_runner` crashes on analyzer-13 APIs the forced-lower version lacks. Neither is worth it.
+- **Re-checked empirically (2026-07-23, `pub add --dry-run`):** `mockito 5.7.0` now resolves clean — the clash cleared, but `mocktail` already covers stub/verify with no codegen, so still not adopted; `freezed` resolves **only** as `4.0.0-dev.3` prerelease (stable still clashes); `riverpod_generator` still fails version solving outright.
+- **The real strategy: keep the generator count low.** Every code-gen dep is a hostage to the shared ceiling; choosing no-codegen tools (mocktail, bloc_concurrency, equatable) sidesteps the fights entirely.
+
 ### Platform interop (EventChannel)
 
 - **EventChannel streams native→Dart.** A `StreamHandler` (`onListen`/`onCancel`) manages a long-lived subscription. Native callbacks arrive on a **binder thread**, but the `EventSink` must be touched on the **main thread** — hence the main-thread hop.
@@ -72,11 +79,12 @@ Threads deliberately left open, or not yet exercised. Revisit before claiming a 
 - **Branch protection deferred** — plan-tier constraint; PR-into-`main` by discipline for now.
 - **Backoff deferred** — pairs with a retry timer that doesn't exist; launch/reconnect spacing suffices.
 - **Multi-store / Huawei** — Huawei-without-GMS can't receive FCM push; a release-phase concern. (ADR-022)
-- **freezed deferred** — analyzer-clash; revisit at 4.0 stable.
+- **freezed deferred** — stable still clashes with analyzer 13; only `4.0.0-dev.3` prerelease resolves (re-verified 2026-07-23). Tracked trigger: adopt at **4.0 stable** — it removes the hand-written `equatable` + `copyWith` boilerplate.
 - **Automated import-boundary enforcement deferred** — (ADR-017).
 
 ### Not yet built / exercised
 
+- **Sync has no post-write trigger.** Drains fire only on **app launch** + **connectivity-restored** — so a group/expense created while *already online* sits in the outbox until the next launch or network blip, **not immediately**. Needs an enqueue-time `SyncRequested` kick (cheap; lives in the use-case / presentation command, not the repository — `droppable` already guards overlap). Planned enhancement, **Phase 1**, bundled with the first real write feature (charter §11).
 - **Auth** — still `NoAuthTokenProvider`. The hand-built dio 401→refresh→retry interceptor exists but has **never faced a real 401** (charter §10 says build it by hand at least once — half-done).
 - **MVVM-command verdict ADR** — the presentation-flavor Command experiment (`lib/app/command/`) has no written conclusion vs an `isSubmitting` field.
 - **Extension-type ids** — `GroupId`/`UserId` over raw `String` (charter §7-A candidate), not done.
