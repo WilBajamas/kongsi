@@ -19,23 +19,9 @@ If you're an AI assistant or coding agent picking this up cold:
 - **Working method:** plan first, implement later. Always propose the design and trade-offs before writing code.
 - **Starting the project?** Go straight to **§6-A Project Foundations** — it is the ordered "how to start correctly" spec, with a Definition of Done. Do not begin features until its DoD is met.
 
-### Current status (update this every session)
+### Current status
 
-```
-CURRENT PHASE : Phase 0 — Foundations (in progress) — full spec in §6-A
-LAST DONE     : Stage 6 (the spine) complete — error model, logger, clock/UUID,
-                dio network client, Drift DB, Riverpod composition root, theme
-                from design tokens, l10n (en/ms/zh). ADRs 001–019 recorded.
-NEXT ACTION   : Stage 7 — routing (deep-link-ready; ADR-010). Then Stage 8 test
-                harness → Stage 9 CI skeleton → Stage 10 global error capture →
-                walking skeleton.
-BLOCKERS      : none
-DECISIONS OPEN: ADR-006 (conflict resolution, Proposed), ADR-007 (deep-link
-                provider — Phase 4 spike)
-AI SECTION    : §17 "AI features (optional)" added — three tiers, Edge-Function
-                proxy, plus five unnumbered future AI ADRs (§19); natural-
-                language-entry flow left as an explicit future task.
-```
+**Live status lives in `HANDOVER.md`** (updated every session). This charter is the stable *plan*, not the running log — check the handover for where things actually are.
 
 ---
 
@@ -508,34 +494,17 @@ Two hard rules the sketch must state explicitly: the flow **ends in user confirm
 
 > ⚠️ **Phase 4 spike:** Firebase Dynamic Links was discontinued (shut down Aug 2025). Before committing a deep-link/attribution vendor, run a short spike to pick a current option (e.g. Branch, AppsFlyer, or a DIY deferred-link scheme). Verify status when you reach this phase.
 
-## 19. Architecture Decision Records (fill these in as you go)
+## 19. Architecture Decision Records
 
-Keep a `/docs/adr/` folder. One file per decision. Starter list:
-- **ADR-001** Backend = Supabase (data/auth/realtime) + Firebase (platform services). *Accepted.*
-- **ADR-002** State: Riverpod for DI, Bloc/Cubit for feature state, Command for writes. *Accepted.*
-- **ADR-003** Offline strategy = local DB SSOT + outbox/Command queue + idempotency key. *Accepted.*
-- **ADR-004** No certificate pinning; enforce TLS + Network Security Config + Play Integrity. *Accepted.*
-- **ADR-005** Local DB = ? (Drift vs Isar) — *Open. See note below.*
-- **ADR-006** Conflict resolution = last-write-wins (v1), field-merge (v2). *Proposed.*
-- **ADR-007** Deep-link/attribution provider. *Open — Phase 4 spike.*
-- **ADR-008** Background sync = WorkManager (Android) / BGTaskScheduler (iOS) draining the **same** outbox as the foreground SyncBloc; foreground service for long, visible batch work. *Accepted.*
-- **ADR-009** Error model = `Result`/`Either` + `Failure` taxonomy; exceptions never escape the data layer. *Accepted.*
-- **ADR-010** Routing = `go_router`, typed routes, deep-link-ready from Phase 0 (route table = deep-link contract). *Accepted.*
-- **ADR-011** Package/bundle ID = `com.<domain-you-own>.kongsi` — treat as irreversible. *Open — decide before `flutter create`.*
-- **ADR-012** Toolchain = pinned Flutter SDK (FVM) + committed version file + dependency-bump policy. *Proposed.*
-- **ADR-013** Config = single typed `AppConfig` built at startup from `--dart-define-from-file`; no `String.fromEnvironment` in feature code. *Accepted.*
-- **ADR-014** Clock + UUID are injected abstractions (load-bearing for idempotency + LWW conflict resolution + testable sync). *Accepted.*
-- **ADR-015 – 018** *(recorded in `/docs/adr/` ahead of this starter list — see that folder for full text)* — Android `minSdk 26`; iOS deployment target 16; automated import-boundary enforcement deferred; single token-refresh owner (Supabase SDK; the dio interceptor delegates). *Accepted / Deferred.*
-- **ADR-019** Localization = gen_l10n (ARB) + intl; strings translated in the presentation layer only (lower layers emit typed errors/keys). *Accepted.*
-*Future AI ADRs (from §17 — left unnumbered on purpose so real ADR files can keep taking the next free number; each gets a number when it's actually written):*
+The live decision records are in **`docs/adr/`** (one file per decision) — see [`docs/adr/README.md`](docs/adr/README.md) for the full index and status. That folder is the source of truth; the starter list that once lived here has been superseded by the real files (001–023).
+
+*Future AI ADRs (from §17 — not yet written; each takes the next free number when it is):*
 
 - AI features are optional, Remote-Config-gated, and bound by "AI proposes, user disposes": the model parses/suggests/phrases, a human confirms every ledger write, and all arithmetic runs in deterministic Dart. *Accepted (charter-level).*
 - All LLM calls route through a Supabase Edge Function proxy that holds the provider API key server-side; no LLM key ever ships in the client, and the proxy enforces a per-user rate limit. *Accepted (charter-level).*
 - LLM outputs must be constrained to a JSON schema and validated on-device; malformed or rule-violating responses are rejected and fall back to manual entry. *Accepted (charter-level).*
 - The Q&A assistant uses tool/function calling over the local ledger (the model chooses a typed query, the app executes it) rather than dumping ledger data into the prompt; RAG/embeddings are out of scope. *Proposed.*
 - LLM model selection is deferred to a short spike at Tier 3 (pricing/quality move fast); the chosen model is config-swappable, never hard-coded. *Open — Tier 3 spike.*
-
-*ADR-005 recommendation:* **Drift** (relational SQL, mirrors your Postgres schema, supports SQLCipher encryption, joins make balance queries clean) over Isar/Hive. Isar is faster to write but the relational ledger benefits from SQL and the Postgres mental model helps in interviews. Your call — record the reasoning either way.
 
 ## 20. Risk register / weakness → mitigation map
 
