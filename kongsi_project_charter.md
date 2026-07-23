@@ -411,6 +411,31 @@ Pipeline stages:
 4. **Integration:** run `integration_test` on **Firebase Test Lab** device matrix.
 5. **Release — Bitrise + fastlane:** staged rollout on Play Console / TestFlight.
 
+### Deferred CI/CD enhancements (not anti-patterns — sequenced after "prove it works")
+
+- **Build caching on Bitrise.** Every `develop` push currently re-downloads the Flutter SDK and all dependencies from scratch. When build time becomes a real annoyance, add **key-based caching** for: the Flutter SDK, the pub cache (`~/.pub-cache`), Gradle (`~/.gradle`), and the fastlane gems (`vendor/bundle`). **Key each cache on its lockfile** (`pubspec.lock`, `Gemfile.lock`, gradle files) so a dependency bump invalidates it — a stale cache outliving a bump is the classic caching bug. **Never cache** the git clone (the ADR-022 build number needs full history) or the built APK (release outputs stay clean/reproducible). GitHub Actions already caches Flutter via `subosito/flutter-action` (`cache: true`); Bitrise is the side that lacks it. Deliberately deferred as an optimization: prove the pipeline first, speed it up when slowness hurts.
+- **Gate distribution on a green verify (close the Actions↔Bitrise gap).** Today Actions (checks) and Bitrise (build+distribute) fire **in parallel** on a `develop` push and are **independent** — Bitrise doesn't know whether `analyze`/`format`/`test` passed, so nothing platform-enforced stops an un-verified build from being distributed. Right now the gap is closed by **PR discipline, not the platform.** The target state combines **two guards at two different moments** (they are complementary, not redundant):
+
+  | Guard | When it acts | What it prevents |
+  |---|---|---|
+  | **Branch protection** | on the PR, **pre-merge** | you can't *merge* unverified code into `develop` |
+  | **Chaining (Actions → Bitrise)** | on the `develop` push, **post-merge** | distribution only starts *after* a green verify |
+
+  Target end-to-end flow once the plan tier unlocks branch protection:
+
+  ```
+  Dev opens PR → develop
+    → Actions runs checks ON THE PR (format · analyze · test · compile)
+    → Branch protection BLOCKS merge until checks are green      ← gate
+    → Merge → develop gets the new commit
+    → develop push → Actions runs again (verify the merged commit)
+    → Actions' final step TRIGGERS Bitrise via its API           ← chain
+    → Bitrise: clone → build APK (/ later, signed IPA)
+    → fastlane → upload to Firebase App Distribution / TestFlight
+  ```
+
+  Implementation notes: Actions **triggers** Bitrise via its build-start **API** (Bitrise still clones the repo itself); when chaining is added, **remove Bitrise's own `push_branch: develop` trigger** or it fires twice. On a **solo repo**, require *status checks* but **not** PR approvals (required approvals = **0**), or you deadlock on approving your own PR (see learning log). The **IPA/TestFlight leg is future work** — today Bitrise builds/distributes only the Android APK; signed iOS needs fastlane `match` + Apple certs. Nuance worth stating: a merged/squashed commit has a *new* SHA vs the one tested on the PR — GitHub's "require branches up to date before merging" plus the post-merge Actions run (kept *before* the chain fires) is what closes that skew.
+
 ## 16. Observability
 
 - **Crashlytics** — sanitized (no amounts, emails, or message content).
