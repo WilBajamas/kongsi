@@ -350,7 +350,7 @@ Key rules:
 
 - **Reads:** UI reads local DB only. Always instant.
 - **Writes (optimistic):** write to local DB **and** enqueue a `Command` in the outbox → return to UI immediately.
-- **Sync:** `SyncBloc` drains the outbox when online (triggered by the connectivity `EventChannel`), with **exponential backoff** on failure.
+- **Sync:** `SyncBloc` drains the outbox when online, with **exponential backoff** on failure. **Drain triggers (three):** app launch · connectivity-restored (the `EventChannel`) · and an **enqueue-time kick** so a write made while *already online* syncs immediately instead of waiting for the next launch/reconnect. *Currently only launch + connectivity are wired; the post-write kick is a planned **enhancement** — a Phase-1 item, landed with the first real write feature (it needs no new infra, just `SyncRequested` fired from the use-case/command after a successful enqueue).*
 - **Idempotency:** every write carries its `client_id`; server upserts on it → safe retries, no dupes.
 - **Conflict resolution:** v1 = **last-write-wins** by `updated_at`. Document the harder cases (two offline edits of the same expense) and how you'd move to field-level merge in v2. *Being able to articulate this trade-off is the interview gold.*
 - **Realtime (v2):** incoming changes upsert into local DB; UI reacts via the SSOT.
