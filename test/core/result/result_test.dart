@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kongsi/core/error/app_error.dart';
 import 'package:kongsi/core/result/result.dart';
 
+// Result Unit Test
 void main() {
   group('Result', () {
     test('Success carries its value', () {

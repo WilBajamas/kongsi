@@ -14,7 +14,7 @@ import 'package:kongsi/core/sync/sync_event.dart';
 import 'package:kongsi/features/groups/data/dev_seed.dart';
 import 'package:kongsi/main.dart';
 
-/// Shared startup for all flavors: one logger, three error nets, one runApp.
+/// Shared startup for all flavors: one logger, four error nets, one runApp.
 void bootstrap(AppConfig config) {
   final talker = createLogger();
 

@@ -2,8 +2,7 @@ import 'package:flutter/services.dart';
 import 'package:kongsi/core/connectivity/connectivity_monitor.dart';
 import 'package:kongsi/core/connectivity/connectivity_status.dart';
 
-/// Real monitor: native emits `'online'`/`'offline'` strings over an
-/// EventChannel. `.distinct()` collapses repeats so listeners see transitions.
+/// Real monitor: native emits `'online'`/`'offline'` strings over an EventChannel.
 class EventChannelConnectivityMonitor implements ConnectivityMonitor {
   const EventChannelConnectivityMonitor([
     this._channel = const EventChannel('kongsi/connectivity'),
@@ -19,5 +18,7 @@ class EventChannelConnectivityMonitor implements ConnectivityMonitor {
             ? ConnectivityStatus.online
             : ConnectivityStatus.offline,
       )
+      // `distinct` skips data events if they are equal to the previous event.
+      // ! DO NOT REMOVE distinct
       .distinct();
 }

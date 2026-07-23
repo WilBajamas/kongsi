@@ -8,8 +8,8 @@ import 'package:kongsi/l10n/gen/app_localizations.dart';
 import '../mocks/mock_app_config.dart';
 
 extension PumpApp on WidgetTester {
-  /// Pumps [child] under the same shell the real app uses — DI scope, theme,
-  /// and localizations — with [mockAppConfig] injected so config-reading
+  /// Creates a fake-dummy shell to simulate the real app's shell — DI scope,
+  /// theme, and localizations — with [mockAppConfig] injected so config-reading
   /// widgets resolve. Extra [overrides] stack on top.
   Future<void> pumpApp(
     Widget child, {

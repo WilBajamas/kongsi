@@ -40,6 +40,7 @@ void main() {
         ),
       ],
     );
+    // a state change only shows up on screen after another frame pump.
     await tester.pump();
 
     expect(find.text('Japan Trip'), findsOneWidget);
@@ -69,15 +70,21 @@ void main() {
     );
     await tester.pump();
 
+    // open the dialog by finding a FloatingActionButton
     await tester.tap(find.byType(FloatingActionButton));
+    // wait for the dialog to fully animate and settle
     await tester.pumpAndSettle();
+    // enter the group name - by finding first TextField
     await tester.enterText(find.byType(TextField).first, 'Japan Trip');
+    // tap the create button - by text 'Create'
     await tester.tap(find.text('Create'));
+    // wait for the dialog to close and the new group to be added to the list
     await tester.pumpAndSettle();
 
     expect(repository.created, hasLength(1));
     expect(repository.created.single.name, 'Japan Trip');
     expect(repository.created.single.currency, 'MYR');
+    // expect dialog to be closed - "nothing"
     expect(find.byType(CreateGroupDialog), findsNothing);
   });
 }

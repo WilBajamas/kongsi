@@ -16,16 +16,10 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../helpers/pump_app.dart';
 
-// 1. A mock is just an empty subclass — no constructor, no behaviour of its
-//    own. mocktail intercepts every call so you can script and inspect them.
 class MockGroupsRepository extends Mock implements GroupsRepository {}
 
 void main() {
   setUpAll(() {
-    // 2. registerFallbackValue: needed once per custom type you later match
-    //    with any()/captureAny(). mocktail needs a sample Group to stand in
-    //    while it reasons about the matcher — the values never matter as real
-    //    data. (Primitives like String/int need no fallback.)
     registerFallbackValue(
       Group(id: '', name: '', currency: '', createdAt: DateTime(2000)),
     );
@@ -33,18 +27,15 @@ void main() {
 
   testWidgets('creates a group from the dialog (mocktail)', (tester) async {
     final repository = MockGroupsRepository();
-
-    // 3. Stub the reads. watchGroups() is called by the page's cubit; an
-    //    unstubbed method on a mock throws, so give it a canned empty stream.
-    //    thenAnswer (not thenReturn) because the return is computed lazily —
-    //    the right choice for Streams/Futures. (Docs often write the closure
-    //    form `() => repository.watchGroups()`; a plain tearoff is the same.)
+    // `when` tells the test to define the response for this behaviour
+    // when being used later.
+    // "If watchGroups() gets called later, respond with an empty stream."
     when(repository.watchGroups).thenAnswer((_) => Stream.value([]));
-
-    // 4. Stub the write so awaiting it completes. any() matches any Group
-    //    argument — that's what the fallback value registered above is for.
+    // "If createGroup(anything) gets called later, complete successfully."
     when(() => repository.createGroup(any())).thenAnswer((_) async {});
 
+    // overrides injects the mock; watchGroups() is then called when the
+    // page builds.
     await tester.pumpApp(
       const GroupsPage(),
       overrides: [groupsRepositoryProvider.overrideWithValue(repository)],
@@ -54,12 +45,13 @@ void main() {
     await tester.tap(find.byType(FloatingActionButton));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).first, 'Japan Trip');
+    // This is where the we simulate creating the group.
     await tester.tap(find.text('Create'));
     await tester.pumpAndSettle();
 
-    // 5. verify asserts the interaction happened exactly once. captureAny()
-    //    additionally grabs the argument so you can inspect it — this replaces
-    //    the hand-rolled fake's `created` list.
+    // `verify` asserts the interaction happened exactly once. `captureAny()`
+    // additionally grabs the argument so you can inspect it — this replaces
+    // the hand-rolled fake's `created` list.
     final captured = verify(
       () => repository.createGroup(captureAny()),
     ).captured;
