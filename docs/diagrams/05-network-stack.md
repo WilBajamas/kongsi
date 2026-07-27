@@ -56,7 +56,7 @@ sequenceDiagram
   token isn't the problem, give up). Unit-tested, but auth isn't wired yet.
 - **Two error families by consumer:** the repo path wants "which `AppError` is it?"
   (`Result`, exhaustive `switch`); the sync path wants "does this count toward the
-  retry ceiling?" (`SendFailure`) — same client, different questions.
+  permanent or transient?" (`SendFailure`) — same client, different questions.
 
 **Seams:** the caller and what it does with `SendFailure` → `04-sync-outbox` ·
 "online" is a hint, not a promise the server answers → `06-connectivity`.

@@ -12,6 +12,7 @@ sequenceDiagram
     participant Outbox as DriftOutboxRepository
     participant Reg as CommandRegistry
     participant Sender as SupabaseCommandSender
+    participant UI as SyncProblemsCubit → banner
 
     Trig->>Bloc: add(SyncRequested())
     Note over Bloc: droppable(): if a drain is already running,<br/>this event is DROPPED — drains never overlap
@@ -35,30 +36,35 @@ sequenceDiagram
             Note over Bloc: not the slip's fault — attempts NOT counted,<br/>whole queue retries on the next trigger
         else CommandRejected · other 4xx — or undecodable slip
             Sender--)Bloc: throw CommandRejected / StateError
-            Bloc->>Outbox: recordFailure(slip.id) · attempts+1, in SQL
-            opt slip.attempts + 1 >= 5 (_maxAttempts)
-                Bloc->>Outbox: markFailed(slip.id) · dead-letter — leaves getPending forever
-            end
+            Bloc->>Outbox: recordFailure(slip.id) · attempts+1 · diagnostic only
+            Bloc->>Outbox: markFailed(slip.id) · dead-letter on the FIRST rejection
+            Note right of Outbox: permanent: the same payload fails identically,<br/>and each retry would cost a whole launch —<br/>so tell the user now (ADR-024)
+            Outbox--)UI: watchFailed() emits → SyncProblemsCubit → banner
             Bloc->>Bloc: addError → net ④ · emit(SyncFailure) · HALT drain
-            Note over Bloc: halt, not skip — FIFO is a correctness rule:<br/>later slips may depend on this one
+            Note over Bloc: halt, not skip — FIFO is a correctness rule:<br/>a manual retry re-queues under the original id,<br/>so it still sorts ahead of the slips behind it
         end
     end
 
     Bloc->>Bloc: emit(SyncIdle) · queue drained
+
+    Note over UI,Outbox: — recovery: the user acts —
+    UI->>Outbox: retry(id) · status → pending, attempts kept
+    UI->>Bloc: add(SyncRequested()) · drain again
 ```
 
 **Reading it**
 
-- **The two failure exits are the retry ceiling's whole design.** Only the slip's
-  *own* fault (rejected / undecodable) counts toward the 5-attempt ceiling — if
-  offline failures counted, five offline app-launches would dead-letter good data.
-- **⚠ The rejected branch changes** — [ADR-024](../adr/ADR-024-surface-failed-syncs.md)
-  dead-letters a rejection on the **first** occurrence (the ceiling is removed) and
-  surfaces it to the user, because a dead-lettered slip currently vanishes silently
-  while its local row remains. Diagram shows today's code; redraw when it lands.
-- **At-least-once, on purpose (steps 10–11):** delete-after-send means a crash
-  between them re-sends once; the server's upsert on `client_id` makes the repeat
-  a no-op. Exactly-once would cost far more machinery for the same result.
+- **The two failure exits are the whole design.** Only the slip's *own* fault
+  (rejected / undecodable) is treated as permanent — if offline counted, a few
+  offline launches would dead-letter perfectly good data.
+- **A rejection dead-letters immediately and the user is told**
+  ([ADR-024](../adr/ADR-024-surface-failed-syncs.md)). There's no retry ceiling:
+  the same payload against the same server fails identically, and since the drain
+  halts, each extra attempt would cost a whole launch or reconnect.
+- **At-least-once, on purpose:** delete-after-send means a crash between them
+  re-sends once; the server upserts on the client-generated id, so the repeat is a
+  no-op. That upsert needs `Prefer: resolution=merge-duplicates` — **it is not the
+  default**, and its absence made duplicates look like rejections for all of Phase 0.
 - **`droppable` (step 2)** exists because two triggers can fire close together
   (launch + reconnect) — the second request is dropped, never queued.
 - **Trigger 3 is deferred:** an enqueue-time kick (write while already online →

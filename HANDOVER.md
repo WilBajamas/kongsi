@@ -23,13 +23,13 @@ You (the next agent) are **mentoring** the developer through building **Kongsi**
 
 ## Where we are
 
-**Phase 0 — essentially COMPLETE.** Walking skeleton end-to-end (local + outbox + Supabase sync, device-verified online *and* offline); retry ceiling / dead-letter; connectivity trigger (native EventChannel, both steps); and **Chunk C done — a signed staging APK auto-distributes to Firebase App Distribution** via Bitrise + fastlane on push to `develop`, device-verified. Onboarding captured (bootstrap scripts + README). Remaining: the Post-Phase-0 consolidation (charter §6-A: summary → diagrams → exam) — the **summary is done** (`docs/technical-summary.md`); **diagrams are next**.
+**Phase 0 — COMPLETE**, including the Post-Phase-0 consolidation (charter §6-A): the [technical summary](docs/technical-summary.md) and the seven per-module [flow diagrams](docs/diagrams/) are both done. Walking skeleton end-to-end (local + outbox + Supabase sync, device-verified online *and* offline); dead-letter + failure surfacing (ADR-024); connectivity trigger (native EventChannel, both steps); and **Chunk C done — a signed staging APK auto-distributes to Firebase App Distribution** via Bitrise + fastlane on push to `develop`, device-verified. Onboarding captured (bootstrap scripts + README).
 
 Real Supabase **and Firebase** projects exist; `config/dev.json` filled (gitignored). `groups` table created with **RLS disabled** for the skeleton (re-enabled when auth lands — real policies need `auth.uid()`).
 
 **Branch protection on `main` — DEFERRED (external constraint, not an oversight).** GitHub gates branch-protection/rulesets behind a paid tier for *private* repos, and this repo is Free + private. Revisit on going public or GitHub Pro; meanwhile the PR-into-`main` flow is followed by discipline.
 
-Branch `develop`. Some recent **doc commits unpushed** — push `develop` to sync origin (and let CI confirm the iOS Swift stub compiles on the macOS runner). analyze `--fatal-infos` clean, tests **19/19**, format clean. Sandbox: `./.fvm/flutter_sdk/bin/flutter …` (fvm CLI not on sandbox PATH).
+Branch `develop`. Several commits **unpushed** — push `develop` to sync origin (and let CI confirm the iOS Swift stub compiles on the macOS runner). analyze `--fatal-infos` clean, tests **25/25**, format clean. Sandbox: `./.fvm/flutter_sdk/bin/flutter …` (fvm CLI not on sandbox PATH).
 
 ## What's next
 
@@ -37,9 +37,8 @@ Branch `develop`. Some recent **doc commits unpushed** — push `develop` to syn
    - **Device-verify the upsert.** Never exercised against the real backend: send a slip, then re-send the same one (comment out the `delete`) and confirm it no longer returns 409. Until checked, at-least-once is written but unproven.
    - **The sync-failure UX is a deliberate placeholder** — it satisfies "never fail silently" and nothing more. Design is unplanned; open questions listed in the learning log under "Sync-failure UX" (the banner text is meaningless to a user, no per-item retry, no discard, banner may be the wrong surface entirely).
    - Related open threads (base-version tracking, dependent-slip cascade) also in the learning log.
-2. **Post-Phase-0 consolidation (charter §6-A).** Deliverables (a) technical summary and (b) per-module flow diagrams are **done** (`docs/diagrams/`, seven sequence diagrams). **(c) the exam is ON HOLD** at sheets 01–03 (`docs/exam/`) — paused deliberately while the sync design is corrected, since there's no point testing a design that's mid-change. Resume after ADR-024 lands.
-3. **Push unpushed `develop` commits** so CI runs.
-4. **Pending small items:** MVVM-command verdict (seeded in ADR-023, still Open); migrate `groups_page_test.dart` to mocktail + retire hand-rolled `MockGroupsRepository` (keep `_FakeOutbox` as a fake — developer exercise); extension-type ids (`GroupId`/`UserId`, charter §7-A candidate); enqueue-time sync kick + backoff (deferred, Phase 1); `logging_command_sender.dart` deletable if the swap example is no longer wanted; `.gitattributes` to pin `*.sh` to LF; **branch protection — deferred by plan tier (see "Where we are").**
+2. **Push unpushed `develop` commits** so CI runs.
+3. **Pending small items:** MVVM-command verdict (seeded in ADR-023, still Open); migrate `groups_page_test.dart` to mocktail + retire hand-rolled `MockGroupsRepository` (keep `_FakeOutbox` as a fake — developer exercise); extension-type ids (`GroupId`/`UserId`, charter §7-A candidate); enqueue-time sync kick + backoff (deferred, Phase 1); `logging_command_sender.dart` deletable if the swap example is no longer wanted; `.gitattributes` to pin `*.sh` to LF; **branch protection — deferred by plan tier (see "Where we are").**
 
 ## ADR state (real files in `docs/adr/`, 001–024)
 

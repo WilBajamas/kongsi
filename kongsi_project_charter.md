@@ -228,13 +228,13 @@ Guardrails, given a tempting mind map full of concepts:
 
 ### Post-Phase-0 consolidation (after DoD, before Phase 1)
 
-Phase 0 ends with understanding, not just working code. Three deliverables, in order — each gets its own dedicated session:
+Phase 0 ends with understanding, not just working code. Two deliverables, in order — each gets its own dedicated session:
 
 1. **Technical summary** — the comprehensive what/why/decisions write-up (interview-oriented), sourced from ADRs, git log, and the handover war stories.
 
 2. **Flow diagrams — one per module, never one big piece.** For each module (bootstrap/DI + error nets, sync/outbox, groups feature slice, network stack, database/migrations), a diagram showing how the classes/files link and the flow top to bottom: entry point → layers → side effects. Rules: each diagram fits one screen; where modules touch (sync → outbox table, feature → registry catalog), reference the other diagram instead of absorbing it. Stored as mermaid in markdown under `docs/diagrams/` so they diff in git and rot is visible in review.
 
-3. **The Phase 0 exam — senior→lead level, self-paced.** Authored by the mentor, sat by the developer whenever ready — **no time limit, no fixed duration.** Organized into **topic sections**, one per area (DI & composition root; sync / outbox; testing doubles; platform interop; versioning; CI/CD; reproducibility) — a coherent section at a time, **not a mixed grab-bag.** Each section drills the **what / why / how** of that one topic, and applies whatever question types fit *within* it: written explanation, diagram-from-memory, and a code kata (e.g. add a new command type end-to-end, swap a seam under test). Coverage must include patterns **used and rejected** (and why), architecture (layering, the DI/override pattern, seams), theory (at-least-once + idempotency, FIFO/dead-letter, offline-first), and every dependency's justification (incl. the analyzer-clash ledger). Each section ends with a short **viva** where the mentor attacks the decisions and the developer defends the trade-offs live. **Open book** — referencing the code is allowed; the bar is explaining every decision and its trade-offs, not recall. The [learning log](docs/learning-log.md) is the study spine.
+*(A third deliverable — a self-paced senior→lead exam — was drafted and then dropped on 2026-07-27. Sitting it stalled development, and the design questions it was meant to surface came out of ordinary design review instead: reviewing the sync design found a silent data-loss path and an idempotency guarantee that was never wired up, both now recorded as [ADR-024](docs/adr/ADR-024-surface-failed-syncs.md). The [learning log](docs/learning-log.md) remains the record of what was understood and what is still open.)*
 
 ## 7. State management & patterns (deliberate assignments)
 

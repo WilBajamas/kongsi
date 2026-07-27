@@ -53,4 +53,4 @@ append-only, *and* wrapping the local write + enqueue in one transaction is what
 data consistent while the schema was wrong.
 
 **Seams:** who writes these tables in one transaction → `02-groups-slice` · how the
-outbox rows drain and how `attempts`/`status` drive the retry ceiling → `04-sync-outbox`.
+outbox rows drain, and how `status` parks a permanently failed one → `04-sync-outbox`.

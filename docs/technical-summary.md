@@ -204,17 +204,21 @@ The queue aims to deliver each command **at least once**, and leans on the
 - Send the command → on success, delete it from the outbox.
 - If the app crashes *after* sending but *before* deleting, the command is sent
   again on next drain — a **duplicate push**.
-- That's fine, because the server **upserts on `client_id`**: the same id can't
-  create a second row.
+- That's fine, because the server **upserts on the client-generated id**: the same
+  id can't create a second row.
 
-> **Correction (2026-07-27) — the upsert was never configured.** The design above is
-> right, but `SupabaseCommandSender` sends `Prefer: return=minimal` only. PostgREST
-> needs `Prefer: resolution=merge-duplicates` to upsert, so today a duplicate push
-> returns **409** and is classified as a *rejection* rather than quietly succeeding.
-> The idempotency claim is therefore aspirational, not implemented. Fixed as a
-> prerequisite of [ADR-024](adr/ADR-024-surface-failed-syncs.md), and **never yet
-> exercised on device** — the crash-between-send-and-delete path has never actually
-> been run against the real backend.
+**The upsert has to be asked for, and for a long time it wasn't.** PostgREST only
+upserts when the request carries `Prefer: resolution=merge-duplicates`; the sender
+was sending `return=minimal` alone, so a duplicate push came back **409** and the
+classifier read it as a permanent rejection. The design was right and written down
+in three places — but the header that enforced it didn't exist, so the guarantee was
+aspirational for the whole of Phase 0. Fixed 2026-07-27 alongside
+[ADR-024](adr/ADR-024-surface-failed-syncs.md). **Still unverified on device:** the
+crash-between-send-and-delete path has never been run against the real backend.
+
+The lesson generalises: *a guarantee that lives in a design doc but not in a line of
+code isn't a guarantee.* For any claim of this shape, ask which code enforces it and
+whether that path has ever actually run.
 
 Why not exactly-once? Because true exactly-once delivery is famously hard (and
 often impossible) across an unreliable network. "At-least-once + idempotency" gets
@@ -269,42 +273,54 @@ rebuilds the typed command from its stored `command_type` + payload → the send
 reads `table` / `toRow()`. Sender and registry are both generic; only the command
 knows its own shape.
 
-### The retry ceiling & dead-letter
+### Dead-letter, and telling the user
 
-A naive queue has two failure traps. The retry ceiling solves **both**:
+A naive queue has two failure traps:
 
 1. **Infinite retry loop** — a command the server will *always* reject keeps
    retrying forever.
 2. **Head-of-line blocking** — because the outbox is strict FIFO, one bad command
    at the front **freezes every good command behind it.**
 
-The fix: count failures, and after `_maxAttempts` (5), mark the command
-`failed` (**dead-letter**) so it steps aside and the queue keeps flowing.
-
-**The subtle part — only count the command's *own* fault.** Failures are sorted
+**The idea that solves both — sort failures by whose fault they are.** They're split
 by a sealed pair, `SendFailure`:
 
-| Type | Cause | Counts toward the ceiling? |
+| Type | Cause | Permanent? |
 |---|---|---|
 | **`CommandRejected`** | 4xx — the server refused *this* command (bad data) | **Yes** |
-| **`DeliveryFailed`** | offline, timeout, 5xx — nothing to do with the command | **No** |
+| **`DeliveryFailed`** | offline, timeout, 5xx | **No** — retry forever, uncounted |
 
-If offline failures counted, then **5 offline app-launches would dead-letter
-perfectly good data.** So transient failures halt the drain *without* counting.
-(401/429 are treated as transient, not rejections — auth/rate-limit will pass
-later.) A command that can't even be decoded is also permanent, caught by a
-catch-all branch.
+A transient failure halts the drain and changes nothing, so a slip survives any
+amount of being offline. (401/429 count as transient — auth/rate-limit will pass
+later.) A **permanent** failure — a rejection, or a payload that can't even be
+decoded — marks the slip `failed` (**dead-letter**) so it steps aside and the queue
+keeps flowing.
 
-> **Superseded by [ADR-024](adr/ADR-024-surface-failed-syncs.md) (2026-07-27) —
-> not yet implemented.** Two faults were found in the above. First, a dead-lettered
-> slip is dropped from the queue but its **local row stays**, so the phone and server
-> diverge permanently with **nobody told** — silent data loss. Second, once failures
-> are classified, the count of 5 is redundant for a *permanent* failure: the same
-> payload fails identically every time, and because the drain halts on failure, those
-> five attempts need five separate launches or reconnects — so the user would learn
-> about it days late. The decision: **dead-letter a rejection on the first
-> occurrence, and surface it to the user**. `attempts` is demoted to a diagnostic
-> counter. The transient path above is unchanged and remains correct.
+If that split didn't exist, **a few offline launches would throw away perfectly good
+data.** It's the sharpest idea in the subsystem.
+
+**Dead-lettering used to lose data silently, and that was the real bug.** The
+original design counted to `_maxAttempts` (5) before dead-lettering, then dropped
+the slip from the queue — while **leaving its local row untouched.** The phone kept
+showing a change the server would never receive, and nothing told anyone. Worse,
+once incoming sync lands, another device's value would overwrite it and the user
+would watch their own edit vanish.
+
+The root error was a borrowed pattern: **dead-letter queues are safe on a server
+because an ops team is alerted and works the queue.** The safety comes from the
+human attached. On a phone there is none, so the same pattern quietly deletes the
+user's work. Dead-lettering a *system message* is fine; dead-lettering *something a
+person typed* is not.
+
+Fixed by [ADR-024](adr/ADR-024-surface-failed-syncs.md): a rejection dead-letters on
+the **first** occurrence and surfaces to the user, who can retry it. The ceiling is
+gone — retrying an unchanged payload against an unchanged server fails identically,
+and since the drain halts on failure, five attempts would have cost five launches or
+reconnects, delaying the news by days. `attempts` survives as a diagnostic count.
+
+*(The UI is deliberately minimal — an app-wide banner that satisfies "never fail
+silently" and nothing more. The real UX is unplanned; open questions are in the
+[learning log](learning-log.md).)*
 
 ### Draining: triggers and racing
 
@@ -451,7 +467,7 @@ kind makes the compiler point at every place that must now handle it.
 **Two error families, on purpose.** The general read/repository path uses
 `Result` / `AppError`. The **sync send** path uses its own `SendFailure` pair
 (`CommandRejected` vs `DeliveryFailed`, §5) — because that path needs a different
-question answered ("does this count toward the retry ceiling?"), not "which
+question answered ("is this permanent, or worth retrying?"), not "which
 `AppError` is it?"
 
 ### The four global error nets
@@ -674,8 +690,7 @@ including a **round-trip guard** that serialises a command and reads it back
 (`toJson` → `fromJson`), so a broken command shape fails a test, not a user's
 sync.
 
-*(Testing is a practice, not a module — no diagram. The doubles taxonomy resurfaces
-in the Phase 0 exam as its own topic section.)*
+*(Testing is a practice, not a module — no diagram.)*
 
 ---
 
@@ -873,7 +888,7 @@ practice — the constructs are just the vehicle.
 
 | Item | Status | Why | § |
 |---|---|---|---|
-| Surface failed syncs (ADR-024) | **accepted, not built** | today a dead-lettered slip is dropped silently while its local row stays — invisible data loss | 5 |
+| Sync-failure UX | placeholder | ADR-024 is built, but the banner is the bare minimum that satisfies "never fail silently"; the real UX is undesigned | 5 |
 | Base-version tracking | pending | nothing records a row's pre-edit value, so a failed change can't be rolled back *in principle*; also what LWW needs to detect a stale write | 5 |
 | Dependent-slip cascade | open | after a dead-letter, slips behind it still send against a server missing their parent; harmless until Phase 2 adds dependent commands | 5 |
 | Exponential backoff | deferred | needs a retry timer that doesn't exist yet; launch/reconnect spacing suffices | 5 |
@@ -949,16 +964,18 @@ that matter most for an interview:
   chosen and its data-loss case documented, but no two-devices-edit-offline
   scenario has actually been run. Being able to *articulate* the trade-off is the
   interview value; proving it end to end is future work.
-- **Sync could lose a write silently — found by reasoning, not by a crash.** A
-  dead-lettered slip is dropped from the queue while the local row it was meant to
-  sync stays put, so the phone and server diverge permanently with no signal to
-  anyone ([ADR-024](adr/ADR-024-surface-failed-syncs.md), accepted, not yet built).
-  Two things fall out of it worth saying in an interview: dead-letter queues are safe
-  on a server *because an ops team is alerted*, and borrowing the pattern to a phone
-  drops the human but keeps the deletion — and **delivery and merge are separate
-  problems**, so no merge strategy (LWW, field merge, CRDT) can rescue a write that
-  never arrived. It also exposed that nothing stores a row's pre-edit value, which is
-  why rollback is impossible in principle today.
+- **Sync used to lose writes silently — found by reasoning, not by a crash.** A
+  dead-lettered slip was dropped while its local row stayed put, so phone and server
+  diverged permanently with no signal to anyone. Fixed
+  ([ADR-024](adr/ADR-024-surface-failed-syncs.md)), but three things it exposed are
+  still open: **nothing stores a row's pre-edit value**, so a failed change can't be
+  rolled back *in principle*, only surfaced; **the failure UI is a placeholder**; and
+  after a dead-letter, slips queued behind it still send against a server missing
+  their parent (harmless until Phase 2 adds dependent commands). Two ideas worth
+  keeping from it: dead-letter queues are safe on a server *because an ops team is
+  alerted* — borrow the pattern to a phone and you drop the human but keep the
+  deletion; and **delivery and merge are separate problems**, so no merge strategy
+  (LWW, field merge, CRDT) can rescue a write that never arrived.
 - **Realtime and Storage are untouched** — both v2 (live updates, receipt images).
   The offline SSOT is built to receive them (incoming changes just upsert into the
   local DB), but nothing streams yet.
@@ -975,6 +992,5 @@ reason to exist.
 
 ---
 
-*This summary is the narrative spine for the Phase 0 flow diagrams (deliverable b)
-and the self-paced exam (deliverable c). Where a section forward-references a
-diagram, that diagram lands under `docs/diagrams/` next.*
+*This summary is the narrative spine for the Phase 0 flow diagrams, which live under
+[`docs/diagrams/`](diagrams/) — one per module, referenced from the sections above.*
