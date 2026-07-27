@@ -24,6 +24,12 @@ void bootstrap(AppConfig config) {
   };
 
   // Error Net 2: Async errors with no local handler arrive here.
+  // ! Measured 2026-07-28: this never fires. Everything below runs inside
+  // ! runZonedGuarded (net 3), so async errors are raised *in* that zone and
+  // ! the zone handler takes them first; net 2 only sees errors reaching the
+  // ! engine from the ROOT zone. Kept as a backstop for exactly that case.
+  // ! Note the irony: since Flutter 3.3 this is the *recommended* catch-all
+  // ! and runZonedGuarded is the legacy approach — here the legacy one wins.
   PlatformDispatcher.instance.onError = (error, stack) {
     talker.handle(error, stack, 'net 2 · PlatformDispatcher');
     return true;

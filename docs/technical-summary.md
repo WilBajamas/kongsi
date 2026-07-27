@@ -476,15 +476,35 @@ Some errors escape *everything* — a bug in a build method, an un-awaited async
 throw. Startup (`bootstrap.dart`) lays down **four catch-all nets** so nothing
 crashes silently and unlogged (charter Stage 10):
 
-| Net | Catches |
-|---|---|
-| `FlutterError.onError` | framework errors (build / layout / paint) |
-| `PlatformDispatcher.instance.onError` | async errors with no local handler |
-| `runZonedGuarded` | uncaught zone errors — the last-resort fallback |
-| `Bloc.observer` | errors thrown inside any Bloc/Cubit |
+| Net | Catches | Fires in practice? |
+|---|---|---|
+| `FlutterError.onError` | framework errors (build / layout / paint) | ✅ verified |
+| `PlatformDispatcher.instance.onError` | async errors with no local handler | ❌ **never fired** |
+| `runZonedGuarded` | uncaught zone errors — the last-resort fallback | ✅ verified |
+| `Bloc.observer` | errors thrown inside any Bloc/Cubit | ✅ verified |
 
 All four funnel into **one logger**, so every escaped error lands in the same
-stream (console in dev, a crash reporter later).
+stream (console in dev, a crash reporter later). Each net **tags itself** on the
+way (`net 1 · FlutterError`, `net 3 · zone`, …) — without that they were
+indistinguishable, and "which net caught this?" was unanswerable.
+
+**Three of the four are verified; one is dead in this configuration.** Firing a
+deliberate error into each net on a device (2026-07-28) showed
+`PlatformDispatcher.onError` **never receives anything**. The reason is
+structural: `bootstrap` wraps the entire app — binding init, `runApp`, the lot —
+in `runZonedGuarded`, so every async error is raised *inside* that zone and the
+zone handler claims it first. `PlatformDispatcher.onError` only sees errors that
+reach the engine from the **root** zone, which with this startup shape is
+essentially nothing.
+
+So the honest count is **three working nets and one backstop that has never
+caught anything.** It isn't strictly dead code — an error raised outside the
+guarded zone (an engine-side callback, a plugin scheduling work in the root zone)
+would still land there — but presenting all four as load-bearing would be
+overselling. Worth knowing that the modern Flutter guidance is the *reverse* of
+this arrangement: since 3.3, `PlatformDispatcher.onError` is the recommended
+catch-all and `runZonedGuarded` is the legacy approach it replaced. Kongsi has
+both, and the legacy one is winning.
 
 > **A sharp edge worth calling out:** `Bloc.observer` is **mutable static state** —
 > anyone, anywhere could reassign it. It's set **once**, in `bootstrap`, with a
