@@ -20,9 +20,11 @@ Dio createDioClient({
   final dio = Dio(options);
 
   dio.interceptors.addAll([
+    // Dio runs every hook in FIFO list order — errors included.
+    // Dio interceptors is a pipeline, and doesn't run in parallel.
     TalkerDioLogger(talker: talker),
     ErrorMappingInterceptor(),
-    AuthInterceptor(dio, tokenProvider), // last → first to see errors
+    AuthInterceptor(dio, tokenProvider),
   ]);
 
   return dio;

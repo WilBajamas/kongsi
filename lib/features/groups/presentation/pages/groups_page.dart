@@ -15,7 +15,6 @@ class GroupsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return BlocProvider(
-      // read, not watch: create runs once and must not rebind.
       create: (_) => GroupsCubit(ref.read(watchGroupsUseCaseProvider)),
       child: Scaffold(
         floatingActionButton: FloatingActionButton(

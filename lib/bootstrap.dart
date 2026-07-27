@@ -49,6 +49,7 @@ void bootstrap(AppConfig config) {
           ],
         );
 
+        // Seed dev dummy data if in dev mode
         if (config.flavor == Flavor.dev) {
           await seedDevGroups(
             db: container.read(appDatabaseProvider),
@@ -72,6 +73,12 @@ void bootstrap(AppConfig config) {
           ),
         );
 
+        // Kick-starts the sync only after runApp: the drain is optional
+        // background work, so it must not delay the first frame and if
+        // syncing ever throws an error, the app is already up.
+        // Must stay below the Bloc.observer line: this read creates the
+        // first Bloc.
+        //
         // One drain per launch; connectivity-driven triggers come later.
         container.read(syncBlocProvider).add(const SyncRequested());
       },

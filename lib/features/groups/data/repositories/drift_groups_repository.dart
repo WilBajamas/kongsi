@@ -21,6 +21,7 @@ class DriftGroupsRepository implements GroupsRepository {
         );
   }
 
+  // TODO: Create a `mapper` folder and set this to a mapper file.
   Group _toEntity(GroupRow row) => Group(
     id: row.id,
     name: row.name,
