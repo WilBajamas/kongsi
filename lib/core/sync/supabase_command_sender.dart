@@ -23,7 +23,10 @@ class SupabaseCommandSender implements CommandSender {
             // JWT into Authorization once auth lands.
             'apikey': anonKey,
             'Authorization': 'Bearer $anonKey',
-            'Prefer': 'return=minimal',
+            // merge-duplicates is what makes at-least-once safe: a re-send
+            // after a crash upserts on the primary key instead of coming back
+            // 409, which the classifier would read as a permanent rejection.
+            'Prefer': 'return=minimal,resolution=merge-duplicates',
           },
         ),
       );

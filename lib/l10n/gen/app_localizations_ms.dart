@@ -31,4 +31,17 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get createGroupFailed => 'Kumpulan tidak dapat dicipta. Cuba lagi.';
+
+  @override
+  String syncProblemsBanner(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count perubahan tidak dapat disimpan',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get syncProblemsRetry => 'Cuba lagi';
 }

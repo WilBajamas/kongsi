@@ -36,4 +36,19 @@ class DriftOutboxRepository implements OutboxRepository {
       const OutboxCompanion(status: Value(OutboxStatus.failed)),
     );
   }
+
+  @override
+  Stream<List<OutboxRow>> watchFailed() {
+    return (_db.select(_db.outbox)
+          ..where((t) => t.status.equalsValue(OutboxStatus.failed))
+          ..orderBy([(t) => OrderingTerm.asc(t.id)]))
+        .watch();
+  }
+
+  @override
+  Future<void> retry(int id) {
+    return (_db.update(_db.outbox)..where((t) => t.id.equals(id))).write(
+      const OutboxCompanion(status: Value(OutboxStatus.pending)),
+    );
+  }
 }

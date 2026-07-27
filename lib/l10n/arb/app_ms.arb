@@ -7,5 +7,7 @@
     "currencyLabel": "Mata wang",
     "cancel": "Batal",
     "create": "Cipta",
-    "createGroupFailed": "Kumpulan tidak dapat dicipta. Cuba lagi."
+    "createGroupFailed": "Kumpulan tidak dapat dicipta. Cuba lagi.",
+    "syncProblemsBanner": "{count, plural, other{{count} perubahan tidak dapat disimpan}}",
+    "syncProblemsRetry": "Cuba lagi"
 }

@@ -31,5 +31,18 @@
     "createGroupFailed": "Could not create the group. Try again.",
     "@createGroupFailed": {
         "description": "Error shown in the create-group dialog when saving fails."
+    },
+    "syncProblemsBanner": "{count, plural, =1{1 change could not be saved} other{{count} changes could not be saved}}",
+    "@syncProblemsBanner": {
+        "description": "App-wide banner shown when changes are stuck and can no longer sync.",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "syncProblemsRetry": "Retry",
+    "@syncProblemsRetry": {
+        "description": "Button on the sync-problems banner that re-queues every stuck change."
     }
 }

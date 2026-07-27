@@ -7,5 +7,7 @@
     "currencyLabel": "货币",
     "cancel": "取消",
     "create": "创建",
-    "createGroupFailed": "无法创建群组，请重试。"
+    "createGroupFailed": "无法创建群组，请重试。",
+    "syncProblemsBanner": "{count, plural, other{{count} 项更改无法保存}}",
+    "syncProblemsRetry": "重试"
 }

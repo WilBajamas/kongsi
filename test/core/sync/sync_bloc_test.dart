@@ -45,8 +45,12 @@ class _FakeOutbox implements OutboxRepository {
   final List<OutboxRow> _slips;
   final deleted = <int>[];
   final markedFailed = <int>[];
+  final _failedController = StreamController<List<OutboxRow>>.broadcast();
 
   int attemptsFor(int id) => _slips.firstWhere((s) => s.id == id).attempts;
+
+  List<OutboxRow> get _failed =>
+      _slips.where((s) => s.status == OutboxStatus.failed).toList();
 
   @override
   Future<List<OutboxRow>> getPending() async =>
@@ -70,7 +74,23 @@ class _FakeOutbox implements OutboxRepository {
     markedFailed.add(id);
     final i = _slips.indexWhere((s) => s.id == id);
     _slips[i] = _slips[i].copyWith(status: OutboxStatus.failed);
+    _failedController.add(_failed);
   }
+
+  @override
+  Stream<List<OutboxRow>> watchFailed() async* {
+    yield _failed;
+    yield* _failedController.stream;
+  }
+
+  @override
+  Future<void> retry(int id) async {
+    final i = _slips.indexWhere((s) => s.id == id);
+    _slips[i] = _slips[i].copyWith(status: OutboxStatus.pending);
+    _failedController.add(_failed);
+  }
+
+  Future<void> dispose() => _failedController.close();
 }
 
 class _ThrowingSender implements CommandSender {
@@ -123,30 +143,68 @@ void main() {
     expect(sender.sent, 1);
   });
 
-  test('a rejected slip is dead-lettered exactly on the 5th attempt', () async {
+  test('a rejected slip is dead-lettered on the first attempt', () async {
     final outbox = _FakeOutbox([_pendingSlip(1)]);
     final sender = _ThrowingSender(const CommandRejected('nope'));
     final bloc = _blocWith(outbox, sender);
     addTearDown(bloc.close);
+    addTearDown(outbox.dispose);
 
-    // First four drains: counted, but not yet dead-lettered.
-    for (var attempt = 1; attempt <= 4; attempt++) {
-      bloc.add(const SyncRequested());
-      await pumpEventQueue();
-      expect(outbox.markedFailed, isEmpty, reason: 'too early at $attempt');
-      expect(outbox.attemptsFor(1), attempt);
-    }
-
-    // Fifth drain hits the ceiling.
     bloc.add(const SyncRequested());
     await pumpEventQueue();
+
+    // Rejections are permanent: no ceiling to climb, so the user hears about
+    // it on this drain rather than five launches later (ADR-024).
     expect(outbox.markedFailed, [1]);
-    expect(sender.sent, 5);
+    expect(sender.sent, 1);
+    expect(outbox.attemptsFor(1), 1, reason: 'still counted, for diagnostics');
 
-    // Sixth drain: the failed slip is skipped, so the sender isn't called.
+    // Second drain: the failed slip is skipped, so the sender isn't called.
     bloc.add(const SyncRequested());
     await pumpEventQueue();
-    expect(sender.sent, 5, reason: 'a dead-lettered slip is not retried');
+    expect(sender.sent, 1, reason: 'a dead-lettered slip is not retried');
+  });
+
+  test('a dead-lettered slip surfaces on the failed stream', () async {
+    final outbox = _FakeOutbox([_pendingSlip(1)]);
+    final sender = _ThrowingSender(const CommandRejected('nope'));
+    final bloc = _blocWith(outbox, sender);
+    addTearDown(bloc.close);
+    addTearDown(outbox.dispose);
+
+    final seen = <List<int>>[];
+    final sub = outbox.watchFailed().listen(
+      (rows) => seen.add([for (final row in rows) row.id]),
+    );
+    addTearDown(sub.cancel);
+
+    bloc.add(const SyncRequested());
+    await pumpEventQueue();
+
+    expect(seen.last, [1], reason: 'the banner has something to show');
+  });
+
+  test('a retried slip drains again', () async {
+    final outbox = _FakeOutbox([_pendingSlip(1)]);
+    final sender = _ThrowingSender(const CommandRejected('nope'));
+    final bloc = _blocWith(outbox, sender);
+    addTearDown(bloc.close);
+    addTearDown(outbox.dispose);
+
+    bloc.add(const SyncRequested());
+    await pumpEventQueue();
+    expect(sender.sent, 1);
+
+    await outbox.retry(1);
+    bloc.add(const SyncRequested());
+    await pumpEventQueue();
+
+    expect(sender.sent, 2, reason: 'retry puts it back in the queue');
+    expect(
+      outbox.attemptsFor(1),
+      2,
+      reason: 'attempts accumulate across retries',
+    );
   });
 
   test(

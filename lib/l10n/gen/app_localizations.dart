@@ -147,6 +147,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not create the group. Try again.'**
   String get createGroupFailed;
+
+  /// App-wide banner shown when changes are stuck and can no longer sync.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 change could not be saved} other{{count} changes could not be saved}}'**
+  String syncProblemsBanner(int count);
+
+  /// Button on the sync-problems banner that re-queues every stuck change.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get syncProblemsRetry;
 }
 
 class _AppLocalizationsDelegate

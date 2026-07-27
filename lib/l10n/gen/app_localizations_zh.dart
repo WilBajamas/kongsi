@@ -31,4 +31,17 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get createGroupFailed => '无法创建群组，请重试。';
+
+  @override
+  String syncProblemsBanner(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 项更改无法保存',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get syncProblemsRetry => '重试';
 }

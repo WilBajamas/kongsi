@@ -9,10 +9,15 @@ abstract interface class OutboxRepository {
 
   Future<void> delete(int id);
 
-  /// Counts the attempt; the retry ceiling reads this number.
+  /// Counts the attempt - diagnostic only
   Future<void> recordFailure(int id);
 
-  /// Parks the slip as `failed` so it drops out of getPending — the
-  /// dead-letter that stops a poison slip blocking the queue.
+  /// marks the slip as failed - stops blocking the queue
   Future<void> markFailed(int id);
+
+  /// stream failed slips to notify users
+  Stream<List<OutboxRow>> watchFailed();
+
+  /// puts a dead-lettered slip back in the queue and keeps the id
+  Future<void> retry(int id);
 }

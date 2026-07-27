@@ -34,10 +34,6 @@ class SyncBloc extends Bloc<SyncEvent, SyncState> {
   final CommandSender _sender;
   late final StreamSubscription<ConnectivityStatus> _connectivitySub;
 
-  /// Rejections allowed before a slip is dead-lettered. Only the slip's own
-  /// fault counts — being offline never does.
-  static const _maxAttempts = 5;
-
   Future<void> _onSyncRequested(
     SyncRequested event,
     Emitter<SyncState> emit,
@@ -58,14 +54,11 @@ class SyncBloc extends Bloc<SyncEvent, SyncState> {
         emit(SyncFailure(error));
         return;
       } on Object catch (error, stackTrace) {
-        // The slip's own fault (rejected or undecodable) — count it, and
-        // dead-letter once the ceiling is hit so it stops blocking the queue.
+        // Straight away mark as failed
         addError(error, stackTrace);
-        await _outbox.recordFailure(slip.id);
-        if (slip.attempts + 1 >= _maxAttempts) {
-          await _outbox.markFailed(slip.id);
-        }
-        // Halt rather than skip: later slips may depend on this one (FIFO).
+        await _outbox.recordFailure(slip.id); // diagnostic count only
+        await _outbox.markFailed(slip.id);
+        // emits the error to presentation to handle
         emit(SyncFailure(error));
         return;
       }

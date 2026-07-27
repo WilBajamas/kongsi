@@ -31,4 +31,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createGroupFailed => 'Could not create the group. Try again.';
+
+  @override
+  String syncProblemsBanner(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count changes could not be saved',
+      one: '1 change could not be saved',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get syncProblemsRetry => 'Retry';
 }
