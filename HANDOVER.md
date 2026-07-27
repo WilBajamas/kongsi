@@ -33,13 +33,16 @@ Branch `develop`. Some recent **doc commits unpushed** — push `develop` to syn
 
 ## What's next
 
-1. **Post-Phase-0 consolidation (charter §6-A).** Deliverable (a) technical summary is **done**. Next: **(b) per-module flow diagrams** (mermaid in `docs/diagrams/`, never one big piece; sequence diagrams for flows, graphs for structure), then **(c) self-paced, topic-sectioned senior→lead exam** (no time limit, open book).
-2. **Push unpushed `develop` commits** so CI runs.
-3. **Pending small items:** MVVM-command verdict (seeded in ADR-023, still Open); migrate `groups_page_test.dart` to mocktail + retire hand-rolled `MockGroupsRepository` (keep `_FakeOutbox` as a fake — developer exercise); extension-type ids (`GroupId`/`UserId`, charter §7-A candidate); enqueue-time sync kick + backoff (deferred, Phase 1); `logging_command_sender.dart` deletable if the swap example is no longer wanted; `.gitattributes` to pin `*.sh` to LF; **branch protection — deferred by plan tier (see "Where we are").**
+1. **Build ADR-024 — surface failed syncs.** Accepted 2026-07-27, **not implemented**. A dead-lettered slip is dropped silently while its local row stays, so phone and server diverge with nobody told. Fix: dead-letter a *rejection* on the **first** occurrence (remove the `_maxAttempts` check — transient failures are unaffected), add `watchFailed()` to `OutboxRepository`, a UI surface, and a retry action. Discard is out of scope until rollback exists.
+   - **Do the prerequisite first:** `SupabaseCommandSender` must send `Prefer: return=minimal,resolution=merge-duplicates`, or a duplicate push returns 409 and — with first-strike warnings — falsely tells the user a *successful* change failed. The upsert ADR-003 claims has never actually been configured or device-tested.
+   - Full reasoning in the ADR; related open threads (base-version tracking, dependent-slip cascade) in the learning log.
+2. **Post-Phase-0 consolidation (charter §6-A).** Deliverables (a) technical summary and (b) per-module flow diagrams are **done** (`docs/diagrams/`, seven sequence diagrams). **(c) the exam is ON HOLD** at sheets 01–03 (`docs/exam/`) — paused deliberately while the sync design is corrected, since there's no point testing a design that's mid-change. Resume after ADR-024 lands.
+3. **Push unpushed `develop` commits** so CI runs.
+4. **Pending small items:** MVVM-command verdict (seeded in ADR-023, still Open); migrate `groups_page_test.dart` to mocktail + retire hand-rolled `MockGroupsRepository` (keep `_FakeOutbox` as a fake — developer exercise); extension-type ids (`GroupId`/`UserId`, charter §7-A candidate); enqueue-time sync kick + backoff (deferred, Phase 1); `logging_command_sender.dart` deletable if the swap example is no longer wanted; `.gitattributes` to pin `*.sh` to LF; **branch protection — deferred by plan tier (see "Where we are").**
 
-## ADR state (real files in `docs/adr/`, 001–023)
+## ADR state (real files in `docs/adr/`, 001–024)
 
-Full index + status in `docs/adr/README.md`. Notable: **010 go_router — Superseded by 020** (auto_route) · 006 LWW *(Proposed)* · 007 deep-link *(Open, Phase 4)* · 017 import-boundary *(Deferred)* · 023 MVVM-command verdict *(Open)*.
+Full index + status in `docs/adr/README.md`. Notable: **010 go_router — Superseded by 020** (auto_route) · 006 LWW *(Proposed — carries a 2026-07-27 addendum: its analysis misses the write-never-arrives loss case)* · 007 deep-link *(Open, Phase 4)* · 017 import-boundary *(Deferred)* · 023 MVVM-command verdict *(Open)* · **024 surface failed syncs** *(Accepted, not built — next task)*.
 
 ## Environment gotchas
 

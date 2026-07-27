@@ -207,6 +207,15 @@ The queue aims to deliver each command **at least once**, and leans on the
 - That's fine, because the server **upserts on `client_id`**: the same id can't
   create a second row.
 
+> **Correction (2026-07-27) — the upsert was never configured.** The design above is
+> right, but `SupabaseCommandSender` sends `Prefer: return=minimal` only. PostgREST
+> needs `Prefer: resolution=merge-duplicates` to upsert, so today a duplicate push
+> returns **409** and is classified as a *rejection* rather than quietly succeeding.
+> The idempotency claim is therefore aspirational, not implemented. Fixed as a
+> prerequisite of [ADR-024](adr/ADR-024-surface-failed-syncs.md), and **never yet
+> exercised on device** — the crash-between-send-and-delete path has never actually
+> been run against the real backend.
+
 Why not exactly-once? Because true exactly-once delivery is famously hard (and
 often impossible) across an unreliable network. "At-least-once + idempotency" gets
 the same *result* — no duplicates — with far less machinery.
@@ -285,6 +294,17 @@ perfectly good data.** So transient failures halt the drain *without* counting.
 (401/429 are treated as transient, not rejections — auth/rate-limit will pass
 later.) A command that can't even be decoded is also permanent, caught by a
 catch-all branch.
+
+> **Superseded by [ADR-024](adr/ADR-024-surface-failed-syncs.md) (2026-07-27) —
+> not yet implemented.** Two faults were found in the above. First, a dead-lettered
+> slip is dropped from the queue but its **local row stays**, so the phone and server
+> diverge permanently with **nobody told** — silent data loss. Second, once failures
+> are classified, the count of 5 is redundant for a *permanent* failure: the same
+> payload fails identically every time, and because the drain halts on failure, those
+> five attempts need five separate launches or reconnects — so the user would learn
+> about it days late. The decision: **dead-letter a rejection on the first
+> occurrence, and surface it to the user**. `attempts` is demoted to a diagnostic
+> counter. The transient path above is unchanged and remains correct.
 
 ### Draining: triggers and racing
 
@@ -853,6 +873,9 @@ practice — the constructs are just the vehicle.
 
 | Item | Status | Why | § |
 |---|---|---|---|
+| Surface failed syncs (ADR-024) | **accepted, not built** | today a dead-lettered slip is dropped silently while its local row stays — invisible data loss | 5 |
+| Base-version tracking | pending | nothing records a row's pre-edit value, so a failed change can't be rolled back *in principle*; also what LWW needs to detect a stale write | 5 |
+| Dependent-slip cascade | open | after a dead-letter, slips behind it still send against a server missing their parent; harmless until Phase 2 adds dependent commands | 5 |
 | Exponential backoff | deferred | needs a retry timer that doesn't exist yet; launch/reconnect spacing suffices | 5 |
 | Enqueue-time sync kick | planned (Phase 1) | no new infra — just fire `SyncRequested` after a successful enqueue | 5 |
 | Real 401 handling | built, untested live | interceptor exists but auth isn't wired (`NoAuthTokenProvider`) | 7 |
@@ -926,6 +949,16 @@ that matter most for an interview:
   chosen and its data-loss case documented, but no two-devices-edit-offline
   scenario has actually been run. Being able to *articulate* the trade-off is the
   interview value; proving it end to end is future work.
+- **Sync could lose a write silently — found by reasoning, not by a crash.** A
+  dead-lettered slip is dropped from the queue while the local row it was meant to
+  sync stays put, so the phone and server diverge permanently with no signal to
+  anyone ([ADR-024](adr/ADR-024-surface-failed-syncs.md), accepted, not yet built).
+  Two things fall out of it worth saying in an interview: dead-letter queues are safe
+  on a server *because an ops team is alerted*, and borrowing the pattern to a phone
+  drops the human but keeps the deletion — and **delivery and merge are separate
+  problems**, so no merge strategy (LWW, field merge, CRDT) can rescue a write that
+  never arrived. It also exposed that nothing stores a row's pre-edit value, which is
+  why rollback is impossible in principle today.
 - **Realtime and Storage are untouched** — both v2 (live updates, receipt images).
   The offline SSOT is built to receive them (incoming changes just upsert into the
   local DB), but nothing streams yet.

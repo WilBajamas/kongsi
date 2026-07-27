@@ -52,6 +52,10 @@ sequenceDiagram
 - **The two failure exits are the retry ceiling's whole design.** Only the slip's
   *own* fault (rejected / undecodable) counts toward the 5-attempt ceiling — if
   offline failures counted, five offline app-launches would dead-letter good data.
+- **⚠ The rejected branch changes** — [ADR-024](../adr/ADR-024-surface-failed-syncs.md)
+  dead-letters a rejection on the **first** occurrence (the ceiling is removed) and
+  surfaces it to the user, because a dead-lettered slip currently vanishes silently
+  while its local row remains. Diagram shows today's code; redraw when it lands.
 - **At-least-once, on purpose (steps 10–11):** delete-after-send means a crash
   between them re-sends once; the server's upsert on `client_id` makes the repeat
   a no-op. Exactly-once would cost far more machinery for the same result.

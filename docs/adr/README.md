@@ -25,5 +25,8 @@
 | [021](ADR-021-cicd-tooling.md) | CI/CD split: GitHub Actions (PR gate) + Bitrise (release) + fastlane | Accepted |
 | [022](ADR-022-versioning-build-numbers.md) | Versioning: semantic name + build number = git commit count (CI-injected) | Accepted |
 | [023](ADR-023-mvvm-command-verdict.md) | MVVM `CommandCubit` vs plain submit flag | **Open** — verdict at 2nd use site (Phase 2) |
+| [024](ADR-024-surface-failed-syncs.md) | Failed syncs surfaced to the user, never silently dropped | Accepted |
 
 **ADR-007** is open, deferred to its Phase 4 spike by design. **ADR-017** is deferred pending tooling maturity — see the ADR for what was tried. **ADR-023** is open by design — the verdict is taken when the MVVM Command reaches its second use site (Phase 2 add-expense).
+
+**ADR-006 carries a 2026-07-27 addendum**: its trade-off analysis covers only concurrent edits that both reach the server, and misses the loss case where a write never arrives at all (see [ADR-024](ADR-024-surface-failed-syncs.md)). It stays **Proposed** for that reason.
