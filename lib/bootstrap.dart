@@ -13,6 +13,7 @@ import 'package:kongsi/core/sync/command_registry.dart';
 import 'package:kongsi/core/sync/sync_event.dart';
 import 'package:kongsi/features/groups/data/dev_seed.dart';
 import 'package:kongsi/main.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Shared startup for all flavors: one logger, four error nets, one runApp.
 void bootstrap(AppConfig config) {
@@ -24,12 +25,6 @@ void bootstrap(AppConfig config) {
   };
 
   // Error Net 2: Async errors with no local handler arrive here.
-  // ! Measured 2026-07-28: this never fires. Everything below runs inside
-  // ! runZonedGuarded (net 3), so async errors are raised *in* that zone and
-  // ! the zone handler takes them first; net 2 only sees errors reaching the
-  // ! engine from the ROOT zone. Kept as a backstop for exactly that case.
-  // ! Note the irony: since Flutter 3.3 this is the *recommended* catch-all
-  // ! and runZonedGuarded is the legacy approach — here the legacy one wins.
   PlatformDispatcher.instance.onError = (error, stack) {
     talker.handle(error, stack, 'net 2 · PlatformDispatcher');
     return true;
@@ -41,6 +36,15 @@ void bootstrap(AppConfig config) {
       () async {
         // Binding must init in the same zone as runApp, or Flutter asserts.
         WidgetsFlutterBinding.ensureInitialized();
+
+        // Restores a saved session before returning, so the first frame knows
+        // who is signed in.
+        // ! Token refresh is NOT awaited — see the learning log.
+        // publishableKey is the SDK's new name for the anon key, same value.
+        await Supabase.initialize(
+          url: config.supabaseUrl,
+          publishableKey: config.supabaseAnonKey,
+        );
 
         // Hand-built container so startup work and widgets share one graph.
         final container = ProviderContainer(
@@ -65,11 +69,6 @@ void bootstrap(AppConfig config) {
         }
 
         // Error Net 4: Bloc errors
-        // ! Note: This is a global observer, so it will catch all bloc errors.
-        // ! This line is extremely dangerous and should always be used
-        // ! here only. Because `Bloc.observer` is a mutable static state,
-        // ! it can be mutated from anywhere in this project.
-        // ! SHOULD ONLY BE USED HERE.
         Bloc.observer = AppBlocObserver(talker);
 
         runApp(

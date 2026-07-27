@@ -90,6 +90,7 @@ Threads deliberately left open, or not yet exercised. Revisit before claiming a 
 - **Multi-store / Huawei** — Huawei-without-GMS can't receive FCM push; a release-phase concern. (ADR-022)
 - **freezed deferred** — stable still clashes with analyzer 13; only `4.0.0-dev.3` prerelease resolves (re-verified 2026-07-23). Tracked trigger: adopt at **4.0 stable** — it removes the hand-written `equatable` + `copyWith` boilerplate.
 - **Automated import-boundary enforcement deferred** — (ADR-017).
+- **Clone-from-zero waived** — the last open Phase-0 DoD box, closed by waiver on 2026-07-28 rather than by testing: a clean-room run needs a second machine / VM with USB passthrough. Consequence worth remembering — **`tool/bootstrap.*` has never actually been run**, so the onboarding path is unverified, not proven. (charter §6-A waiver)
 
 ### Not yet built / exercised
 
@@ -104,7 +105,8 @@ Threads deliberately left open, or not yet exercised. Revisit before claiming a 
   - **Device verification still outstanding:** the upsert (`resolution=merge-duplicates`) has never been exercised against the real backend — re-send a slip after a successful send and confirm it no longer 409s.
 - **No base version anywhere** — nothing records what a row looked like *before* an edit (no shadow copy, no server `updated_at`, no version counter). This is why a failed change can't be rolled back **in principle**, not just in practice, and why [ADR-006](adr/ADR-006-conflict-resolution.md)'s LWW can't detect a stale write. The likely successor to LWW.
 - **Dependent-slip cascade** — when a slip dead-letters, slips queued behind it that depended on it still send, against a server that never got the parent. Can't bite in Phase 0 (one command type, no dependencies); becomes real in Phase 2. Likely fix: per-entity FIFO, which needs an `aggregate_id` column on the outbox.
-- **Auth** — still `NoAuthTokenProvider`. The hand-built dio 401→refresh→retry interceptor exists but has **never faced a real 401** (charter §10 says build it by hand at least once — half-done).
+- **Startup token race.** `Supabase.initialize` awaits loading the saved session from disk, so "who is signed in" is settled before the first frame — but refreshing an expired *access token* is fired off in the background and **not** awaited. The launch sync drain can therefore push with a stale token. Harmless today (a 401 there is retryable, not dead-lettered); revisit when RLS lands in chunk 4. Also note the session is still stored in plain SharedPreferences until chunk 2 replaces it.
+- **Auth is wired, the 401 path still is not.** `NoAuthTokenProvider` is gone: the interceptor now gets a real user token from the Supabase SDK, verified on device (sign-in works, the token reaches the interceptor, and a saved session is restored across a restart). But the hand-built 401→refresh→retry path has **still never faced a real 401** — the SDK refreshes early on a timer, so one has to be forced deliberately (Phase 1 chunk 5). Charter §10 stays half-done until then.
 - **MVVM-command verdict ADR** — the presentation-flavor Command experiment (`lib/app/command/`) has no written conclusion vs an `isSubmitting` field.
 - **Extension-type ids** — `GroupId`/`UserId` over raw `String` (charter §7-A candidate), not done.
 - **Realtime + Storage** — v2 features, not started.

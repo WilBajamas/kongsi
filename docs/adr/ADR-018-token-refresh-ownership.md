@@ -41,6 +41,21 @@ The learning value is preserved: the interceptor *mechanics* (401 detection, the
 - **If refresh is ever done via raw dio** (custom endpoint case), use a separate bare `Dio` with no `AuthInterceptor`, so a `401` on the refresh call can't recurse into another refresh.
 - **`flutter_secure_storage`** (charter §13) is mainly for backing the SDK's session persistence or for a custom-endpoint token lifecycle — not for independently storing Supabase's refresh token in parallel with the SDK.
 
+## Addendum — 2026-07-28: the split is about refresh, not about HTTP clients
+
+Adding `supabase_flutter` in Phase 1 exposed that the bullet list above describes something the code does not do, and never did.
+
+It says Supabase data calls "go through the Supabase client" and only non-Supabase endpoints go through dio. But `SupabaseCommandSender` — the app's *only* write path — posts to Supabase's own PostgREST endpoint **through dio**. Nobody noticed while `NoAuthTokenProvider` was in place, because with no token the two paths were indistinguishable.
+
+**Clarification: this ADR is about who rotates the refresh token, not about which HTTP client sends bytes.** The decision sentence — *there is exactly one token-refresh owner* — is unchanged and still holds: `SupabaseAuthTokenProvider` asks the SDK for the access token and asks the SDK to refresh it, so rotation stays in one place no matter who makes the request.
+
+**The write path stays on dio, deliberately.** Two reasons:
+
+- The SDK refreshes *proactively*, on a timer before expiry. It does **not** catch a `401` on a request that already failed and retry it. Those solve the problem from opposite ends, so the hand-built interceptor is doing work the SDK does not do — not duplicating it.
+- It means the interceptor guards a path the app actually uses, rather than sitting idle until the first non-Supabase endpoint appears (Phase 5's Edge Function). Charter §10 asks for this to be built by hand once; a version that never runs in production would not honour that.
+
+The trade-off accepted: two clients can now reach Supabase, and a future reader could reasonably use either. The rule is that **data writes go through dio; auth goes through the SDK** — and nothing else caches a token.
+
 ## Related
 
 - ADR-001 (Supabase primary), charter §10 (token exercise), ADR-009 (errors map to typed `Failure` past the interceptor).

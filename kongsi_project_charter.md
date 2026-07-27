@@ -204,7 +204,7 @@ Every bug found here costs an hour. The same bug found after ten features costs 
 
 Phase 0 is complete when **all** of the following are true:
 
-- [ ] A teammate can clone the repo, run **one command**, and get the `dev` flavor running on a device.
+- [ ] A teammate can clone the repo, run **one command**, and get the `dev` flavor running on a device. — **waived 2026-07-28, see below.**
 - [ ] `dev / staging / prod` all build (Android locally; iOS on CI macOS runner).
 - [ ] A push to `main` runs analyze + format-check + tests, builds Android **and** iOS, all green.
 - [ ] A staging build lands in **Firebase App Distribution** automatically.
@@ -213,7 +213,15 @@ Phase 0 is complete when **all** of the following are true:
 - [ ] Global error capture is wired and verified with a deliberate test crash.
 - [ ] ADRs 001–010 are written and committed.
 
-Nothing else. Do not start Phase 1 until every box is ticked.
+Nothing else. Do not start Phase 1 until every box is ticked **or carries a recorded waiver** — a waiver is a decision with a written reason and a named consequence, not a box quietly left to rot.
+
+#### Waiver — clone-from-zero, 2026-07-28
+
+The first box is **waived, not met**. A real clean-room test needs a second machine, or a VM with USB passthrough for the device half; neither exists on this one-machine solo setup. A one-off manual run would also be a photograph rather than a guarantee — it would show the script worked once, not that it keeps working as setup steps accrue.
+
+**The accepted consequence, stated plainly: `tool/bootstrap.ps1` and `tool/bootstrap.sh` have never been executed.** They encode one known machine-level trap (`flutter config --enable-native-assets`, without which an APK silently ships without `libsqlite3.so`) and possibly others nobody has found — finding those unknowns was the entire point of the box. This is the same shape as the three Phase-0 claims that lived in several documents and had never once run, so it is named here rather than left to read as confidence.
+
+Revisit when a second machine or a spare device turns up. A cheaper partial guard exists and is **not** done: having CI execute the bootstrap script instead of duplicating its steps, which would at least stop the script rotting. It needs FVM installed on the runner (CI currently uses `flutter-action`'s SDK), so it is a small piece of work, not a free one.
 
 ### Anti-patterns — what NOT to do first
 

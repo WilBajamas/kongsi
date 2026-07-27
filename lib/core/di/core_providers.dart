@@ -7,7 +7,7 @@ import 'package:kongsi/core/database/app_database.dart';
 import 'package:kongsi/core/logger/app_logger.dart';
 import 'package:kongsi/core/network/auth_token_provider.dart';
 import 'package:kongsi/core/network/dio_client.dart';
-import 'package:kongsi/core/network/no_auth_token_provider.dart';
+import 'package:kongsi/core/network/supabase_auth_token_provider.dart';
 import 'package:kongsi/core/sync/command_registry.dart';
 import 'package:kongsi/core/sync/command_sender.dart';
 import 'package:kongsi/core/sync/drift_outbox_repository.dart';
@@ -16,6 +16,7 @@ import 'package:kongsi/core/sync/supabase_command_sender.dart';
 import 'package:kongsi/core/sync/sync_bloc.dart';
 import 'package:kongsi/core/system/clock.dart';
 import 'package:kongsi/core/system/uuid_generator.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 
 final appConfigProvider = Provider<AppConfig>(
@@ -30,8 +31,13 @@ final uuidGeneratorProvider = Provider<UuidGenerator>(
   (ref) => UuidV4Generator(),
 );
 
+// `Supabase.instance` is a global singleton
+final goTrueClientProvider = Provider<GoTrueClient>(
+  (ref) => Supabase.instance.client.auth,
+);
+
 final authTokenProvider = Provider<AuthTokenProvider>(
-  (ref) => const NoAuthTokenProvider(),
+  (ref) => SupabaseAuthTokenProvider(ref.watch(goTrueClientProvider)),
 );
 
 final appDatabaseProvider = Provider<AppDatabase>((ref) {

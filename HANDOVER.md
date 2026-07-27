@@ -35,11 +35,11 @@ Real Supabase **and Firebase** projects exist; `config/dev.json` filled (gitigno
 
 Branch `develop`, pushed. analyze `--fatal-infos` clean, **25/25 tests**, format clean. Sandbox: `./.fvm/flutter_sdk/bin/flutter …` (fvm CLI not on sandbox PATH).
 
-## Decision needed before Phase 1 starts
+## Phase 0 is closed — the last box was waived
 
-**One DoD box is still open: clone-from-zero has never been tested.** The bootstrap scripts exist but have never been run on a clean machine — which is the entire point of them, since they exist to catch machine-level setup that isn't in the repo (the `--enable-native-assets` flag is the known one; the unknown ones are why the test matters).
+**Clone-from-zero was waived on 2026-07-28, not tested** (charter §6-A carries the waiver and its reasoning). A clean-room run needs a second machine or a VM with USB passthrough, and neither exists here.
 
-The charter is explicit: *"Do not start Phase 1 until every box is ticked."* So the first thing to settle is whether to **do it** (needs a second machine, a VM, or a container) or **consciously waive it** and note the waiver. Don't let it slide silently — that would be the exact failure mode this project keeps catching.
+Carry this consequence forward: **`tool/bootstrap.ps1` / `bootstrap.sh` have never been executed.** Treat them as unverified, not as a working onboarding path — they are exactly the shape of the three Phase-0 claims that turned out never to have run. The cheap partial guard (CI running the script instead of duplicating its steps) is on the table but not done; it needs FVM on the runner.
 
 ## Phase 1 — Auth & session (charter §18)
 
