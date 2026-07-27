@@ -4,6 +4,24 @@ import 'package:kongsi/app/sync_problems/cubits/sync_problems_cubit.dart';
 import 'package:kongsi/app/sync_problems/cubits/sync_problems_state.dart';
 import 'package:kongsi/l10n/l10n_extension.dart';
 
+/// ! TEMPORARY. This is a stopgap, not the answer to "how do we tell someone a
+/// ! change didn't save". It exists only so ADR-024's rule — never fail
+/// ! silently — holds today, and it is expected to be replaced rather than
+/// ! grown. Do not build on it.
+///
+/// What makes it a stopgap, not a design:
+/// - "2 changes could not be saved" tells the user nothing about *which*
+///   changes. The outbox stores an opaque payload; no slip can describe
+///   itself. Fixing that is a core-sync change, not a UI one.
+/// - Retry is all-or-nothing, and there is no discard at all (discarding
+///   needs a rollback that can't exist until something records a row's
+///   pre-edit value).
+/// - A permanent, undismissable red bar on every screen is far too loud for
+///   what may be one stale row.
+///
+/// Full list of open questions: the learning log, under "Sync-failure UX".
+// TODO(wilbert): replace with a real sync-failure UX (docs/learning-log.md).
+///
 /// Wraps the whole app rather than one screen: a change can be stuck no
 /// matter where the user has navigated to, so the warning can't belong to a
 /// single page.
@@ -11,11 +29,6 @@ import 'package:kongsi/l10n/l10n_extension.dart';
 /// ! Built above the Navigator, which is what supplies the Overlay — so no
 /// ! Tooltip, SnackBar or popup menu in here; they look one up and throw at
 /// ! build time.
-///
-/// Deliberately minimal for now — it satisfies ADR-024's "never fail
-/// silently" and nothing more. The real UX is unplanned; open questions are
-/// listed in the learning log under "Sync-failure UX".
-// TODO(wilbert): design the full sync-failure UX (see docs/learning-log.md).
 class SyncProblemsBanner extends StatelessWidget {
   const SyncProblemsBanner({required this.child, super.key});
 

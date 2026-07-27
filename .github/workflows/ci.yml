@@ -45,6 +45,24 @@ jobs:
   build-android:
     needs: verify
     runs-on: ubuntu-latest
+    strategy:
+      # Don't cancel the other flavors when one fails — a flavor-specific
+      # break is exactly what this matrix exists to surface.
+      fail-fast: false
+      matrix:
+        include:
+          - flavor: dev
+            mode: debug
+          - flavor: staging
+            mode: debug
+          # prod builds in RELEASE on purpose. Debug and release differ in ways
+          # that have already bitten this project once: the Flutter template
+          # declared INTERNET only in the debug manifest, so a release build
+          # would have shipped with no network permission. A debug-only CI
+          # would never have caught it. Release signing uses the debug key for
+          # now (see android/app/build.gradle.kts), so this needs no secrets.
+          - flavor: prod
+            mode: release
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -58,11 +76,11 @@ jobs:
           cache: true
       - run: flutter pub get
       - run: flutter config --enable-native-assets
-      - name: Build APK (dev, unsigned debug)
+      - name: Build APK (${{ matrix.flavor }}, ${{ matrix.mode }})
         run: >
-          flutter build apk --debug --flavor dev
-          -t lib/main_dev.dart
-          --dart-define-from-file=config/dev.example.json
+          flutter build apk --${{ matrix.mode }} --flavor ${{ matrix.flavor }}
+          -t lib/main_${{ matrix.flavor }}.dart
+          --dart-define-from-file=config/${{ matrix.flavor }}.example.json
 
   build-ios:
     needs: verify
@@ -76,6 +94,10 @@ jobs:
           cache: true
       - run: flutter pub get
       - run: flutter config --enable-native-assets
+      # No --flavor here: iOS flavors need matching Xcode schemes/configs, and
+      # only the default Runner scheme exists. This job's job is to prove the
+      # iOS side still compiles (incl. the connectivity Swift stub) — add
+      # schemes first if iOS ever needs per-flavor builds.
       - name: Build iOS (compile-only, no codesign)
         run: >
           flutter build ios --no-codesign --debug

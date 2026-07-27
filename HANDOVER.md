@@ -33,18 +33,19 @@ Branch `develop`. Several commits **unpushed** — push `develop` to sync origin
 
 ## What's next
 
-**Three Phase 0 DoD boxes are still open** (charter §6-A). Everything else on that list is ticked.
+**One Phase 0 DoD box is still open** (charter §6-A). Everything else on that list is ticked.
 
 1. ~~Verify the four error nets with a deliberate crash.~~ **DONE (2026-07-28)** — device-verified with a throwaway probe page, since removed (see git history if it's ever needed again). Each net now **tags its own name** when it hands off to the logger (`net 1 · FlutterError` … `net 4 · Bloc · <type>`), so a log line says which net caught it — without that they were indistinguishable, and you couldn't tell whether a given net ever fired at all.
-2. **`prod` flavor has never been built.** CI builds `dev` only; Bitrise builds `staging`. `main_prod.dart` and `config/prod.json` exist but nothing has compiled that flavor — add it to `ci.yml`.
-3. **Clone-from-zero never tested.** The bootstrap scripts exist but have never been run on a clean machine, which is the whole point of them (it's what catches machine-level traps like the native-assets flag).
+2. ~~`prod` flavor has never been built.~~ **DONE (2026-07-28)** — `app-prod-release.apk` built locally, clean. `ci.yml`'s `build-android` job is now a **matrix over all three flavors** (`fail-fast: false`), with **prod in `--release`** on purpose: debug and release diverge, which this project already got bitten by once (INTERNET was debug-manifest-only, so a release build would have shipped with no network and a debug-only CI would never have noticed). Release signing still uses the debug key, so no secrets needed. `build-ios` stays flavor-less — iOS flavors need Xcode schemes and only `Runner` exists.
+3. **Clone-from-zero never tested — the last open DoD box.** The bootstrap scripts exist but have never been run on a clean machine, which is the whole point of them (it's what catches machine-level traps like the native-assets flag).
 
 Then, outside the DoD:
 
 4. **Device-verify the upsert (ADR-024).** `resolution=merge-duplicates` is written but the duplicate-push path has never hit the real backend: send a slip, re-send the same one (comment out the `delete`), confirm it no longer returns 409. Until checked, at-least-once is written but unproven.
    - **The sync-failure UX is a deliberate placeholder** — satisfies "never fail silently" and nothing more. Open questions in the learning log under "Sync-failure UX".
    - Related open threads (base-version tracking, dependent-slip cascade) also in the learning log.
-5. **Pending small items:** MVVM-command verdict (seeded in ADR-023, still Open); migrate `groups_page_test.dart` to mocktail + retire hand-rolled `MockGroupsRepository` (keep `_FakeOutbox` as a fake — developer exercise); extension-type ids (`GroupId`/`UserId`, charter §7-A candidate); enqueue-time sync kick + backoff (deferred, Phase 1); `logging_command_sender.dart` deletable if the swap example is no longer wanted; `.gitattributes` to pin `*.sh` to LF; **branch protection — deferred by plan tier (see "Where we are").**
+5. **Kotlin Gradle Plugin deprecation (new, 2026-07-28).** Every Android build now warns: *"applies the Kotlin Gradle Plugin, which will cause build failures in future versions of Flutter"* — migrate to built-in Kotlin ([guide](https://docs.flutter.dev/release/breaking-changes/migrate-to-built-in-kotlin/for-app-developers)). Harmless today, a hard break on some future Flutter bump. Worth doing before it's forced.
+6. **Pending small items:** MVVM-command verdict (seeded in ADR-023, still Open); migrate `groups_page_test.dart` to mocktail + retire hand-rolled `MockGroupsRepository` (keep `_FakeOutbox` as a fake — developer exercise); extension-type ids (`GroupId`/`UserId`, charter §7-A candidate); enqueue-time sync kick + backoff (deferred, Phase 1); `logging_command_sender.dart` deletable if the swap example is no longer wanted; `.gitattributes` to pin `*.sh` to LF; **branch protection — deferred by plan tier (see "Where we are").**
 
 ## ADR state (real files in `docs/adr/`, 001–024)
 
