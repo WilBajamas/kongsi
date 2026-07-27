@@ -20,36 +20,48 @@
 
 1. People throw around "offline-first" pretty loosely. What does it actually mean to
    you, and how is it different from an app that just caches some data?
+A: This app does cache data, and the cached data is actually the single source of truth for user's data. But since this app is meant to be used with others, it also has a syncing system which syncs up not only user-created data but also incoming data. When the app goes offline or has choppy internet connection, everytime the user creates a record, it updates the local db - drift, then adds to a outgoing queue to sync with the server, so whenever the internet is stable, it will sync with the server and update both locally and remote. Other apps just cache data for fast retrieval but the data is only meant for the user alone, and if the connection is bad, it will just show an error message, but this app will continue to work with / without internet connection and does its "syncing" silently in the background.
 
 2. A user opens your app in airplane mode and creates something. Walk me through what
    happens, from the tap to the moment it's on the server.
+A: User creates an expense in airplane mode -> calls a cubit function receiving the info -> cubit calls a use case function (passing the info) -> use case calls a repository function -> repository retrieves the info from presentation -> parses the info into drift's data model -> repository uses drift's data model and inserts it into 2 drift tables (outbox & expenses).
+Not implemented but part of future enhancements: Sync system listens to outbox table & connectivity manager -> filter outbox expenses' "sync" status -> retrieves the ones not synced -> check internet connection -> if connectivity good -> immediately parses (decodes) filtered outbox expense into actual commands (translated to supabase readable json) -> passes commands to a sender -> does a POST request to supabase (via dio client) -> supabase updated.
+This flow is implemented: This dart project uses `EventChannels` to communicate with native platforms to retrieve a stream of connectivity updates -> a sync bloc listens to it -> once internet connection is back up -> follows the same procedure as before (filter outbox expenses and so on)
 
 ## The main questions
 
 3. In an app like that, what's the source of truth — the phone or the server? What
    made you land where you did, and what does that decision cost you?
+A: The source of truth is the local db within the phone's storage. Because this is an offline first app and having to improve UX for the user via optimistic state, we've decided to have the SSoT to be the local db which will reflect all user actions and data to be seen without interruptions. But having this system cost us way more planning ahead rather than just set up a http client wrapper and be done with it. The entire offline-first system we've built needs strategic thinking of user's experience, architecturing, workflows, sequences and syncing flows.
 
 4. When someone makes a change with no connection, how do you make sure it actually
    reaches the server later? What's the mechanism?
+A: We have a syncing system built separately from the main features of the app. That system is designed to retrive pending-sync records from the outbox (via local db table); We then have a connectivity manager which listens to internet connection statuses -> after connection is successful -> proceeds to send the records to the server.
 
 5. What stops the same change being sent to the server twice?
+A: We're using special UUIDs as the primary key for each and every outbox record we insert into drift tables, if the same "group" or "expense" is being updated, the same row in the drift table will be replaced with the latest one. But in some instances when the app crashes while sending the change (and doesn't update the sync statuses) then the app relaunches, the sync could push the changes up again resulting in a row being sent to the server twice or more. But supabase's table have been set to use non-duplicate primary keys so the server never records a duplicate.
 
 6. There are three delivery guarantees people talk about: at-most-once, at-least-once,
    exactly-once. Which are you aiming for, and why not one of the others?
+A: If you're asking about the syncing-tries to server, then it's at-least-once. Because of many factors: Unreliable network, choppy / slow connectivity, which are not the user's fault nor purposeful action - which is why I've opted for at least once.
 
 7. When is it safe to take something off the queue — before you send it, or after the
    server confirms? Talk me through the risk on each side.
+A: This app has two ways of taking something off the queue: The first is a successful send. The 2nd is when the record has failed to sync after 5 attempts, we consider it a failure and will remove it from the queue. This prevents future sync attempts to be blocked by this single "poison pill" and future records may depend on the broken one previously.
 
 8. Does the order things get sent in matter? Why, or why not?
+A: Yes, the order does matter. Because of the nature of the business logic - records may depend on previous records, so it's better to have the dependencies sorted out and completed first before moving on to the following ones.
 
 9. Say one queued change is broken — the server rejects it every single time. What
    happens to it, and what happens to everything queued behind it?
+A: 
 
 10. How do you tell the difference between "this change is bad" and "the network is
     down"? Does your retry logic treat those two the same way?
 
 11. What actually triggers the sending? Is it on a timer, on user action, something
     else?
+A: It's reconnection to the internet and app launch for now. I've setup something using Flutter's Event Channel to listen to connectivity changes. In the future the app will immediately sync up the server once the outbox has received a new record - normally from user actions.
 
 12. If two of those triggers fire at almost the same moment, what stops the same work
     happening twice?
