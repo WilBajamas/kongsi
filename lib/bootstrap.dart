@@ -20,12 +20,12 @@ void bootstrap(AppConfig config) {
 
   // Error Net 1: Framework errors (build/layout/paint) arrive here.
   FlutterError.onError = (details) {
-    talker.handle(details.exception, details.stack);
+    talker.handle(details.exception, details.stack, 'net 1 · FlutterError');
   };
 
   // Error Net 2: Async errors with no local handler arrive here.
   PlatformDispatcher.instance.onError = (error, stack) {
-    talker.handle(error, stack);
+    talker.handle(error, stack, 'net 2 · PlatformDispatcher');
     return true;
   };
 
@@ -82,7 +82,7 @@ void bootstrap(AppConfig config) {
         // One drain per launch; connectivity-driven triggers come later.
         container.read(syncBlocProvider).add(const SyncRequested());
       },
-      talker.handle,
+      (error, stack) => talker.handle(error, stack, 'net 3 · zone'),
     ),
   );
 }

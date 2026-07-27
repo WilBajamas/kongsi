@@ -23,7 +23,7 @@ You (the next agent) are **mentoring** the developer through building **Kongsi**
 
 ## Where we are
 
-**Phase 0 — COMPLETE**, including the Post-Phase-0 consolidation (charter §6-A): the [technical summary](docs/technical-summary.md) and the seven per-module [flow diagrams](docs/diagrams/) are both done. Walking skeleton end-to-end (local + outbox + Supabase sync, device-verified online *and* offline); dead-letter + failure surfacing (ADR-024); connectivity trigger (native EventChannel, both steps); and **Chunk C done — a signed staging APK auto-distributes to Firebase App Distribution** via Bitrise + fastlane on push to `develop`, device-verified. Onboarding captured (bootstrap scripts + README).
+**Phase 0 — nearly done, three DoD boxes still open** (see "What's next"). The Post-Phase-0 consolidation (charter §6-A) *is* finished: the [technical summary](docs/technical-summary.md) and the seven per-module [flow diagrams](docs/diagrams/) are both done. Walking skeleton end-to-end (local + outbox + Supabase sync, device-verified online *and* offline); dead-letter + failure surfacing (ADR-024); connectivity trigger (native EventChannel, both steps); and **Chunk C done — a signed staging APK auto-distributes to Firebase App Distribution** via Bitrise + fastlane on push to `develop`, device-verified. Onboarding captured (bootstrap scripts + README).
 
 Real Supabase **and Firebase** projects exist; `config/dev.json` filled (gitignored). `groups` table created with **RLS disabled** for the skeleton (re-enabled when auth lands — real policies need `auth.uid()`).
 
@@ -33,12 +33,18 @@ Branch `develop`. Several commits **unpushed** — push `develop` to sync origin
 
 ## What's next
 
-1. **ADR-024 is BUILT** (2026-07-27) — first-strike dead-letter, `watchFailed()`/`retry()` on the outbox, app-wide `SyncProblemsBanner`, retry-all, and the `resolution=merge-duplicates` upsert header. analyze/format clean, 25/25 tests. Two things remain:
-   - **Device-verify the upsert.** Never exercised against the real backend: send a slip, then re-send the same one (comment out the `delete`) and confirm it no longer returns 409. Until checked, at-least-once is written but unproven.
-   - **The sync-failure UX is a deliberate placeholder** — it satisfies "never fail silently" and nothing more. Design is unplanned; open questions listed in the learning log under "Sync-failure UX" (the banner text is meaningless to a user, no per-item retry, no discard, banner may be the wrong surface entirely).
+**Three Phase 0 DoD boxes are still open** (charter §6-A). Everything else on that list is ticked.
+
+1. ~~Verify the four error nets with a deliberate crash.~~ **DONE (2026-07-28)** — device-verified with a throwaway probe page, since removed (see git history if it's ever needed again). Each net now **tags its own name** when it hands off to the logger (`net 1 · FlutterError` … `net 4 · Bloc · <type>`), so a log line says which net caught it — without that they were indistinguishable, and you couldn't tell whether a given net ever fired at all.
+2. **`prod` flavor has never been built.** CI builds `dev` only; Bitrise builds `staging`. `main_prod.dart` and `config/prod.json` exist but nothing has compiled that flavor — add it to `ci.yml`.
+3. **Clone-from-zero never tested.** The bootstrap scripts exist but have never been run on a clean machine, which is the whole point of them (it's what catches machine-level traps like the native-assets flag).
+
+Then, outside the DoD:
+
+4. **Device-verify the upsert (ADR-024).** `resolution=merge-duplicates` is written but the duplicate-push path has never hit the real backend: send a slip, re-send the same one (comment out the `delete`), confirm it no longer returns 409. Until checked, at-least-once is written but unproven.
+   - **The sync-failure UX is a deliberate placeholder** — satisfies "never fail silently" and nothing more. Open questions in the learning log under "Sync-failure UX".
    - Related open threads (base-version tracking, dependent-slip cascade) also in the learning log.
-2. **Push unpushed `develop` commits** so CI runs.
-3. **Pending small items:** MVVM-command verdict (seeded in ADR-023, still Open); migrate `groups_page_test.dart` to mocktail + retire hand-rolled `MockGroupsRepository` (keep `_FakeOutbox` as a fake — developer exercise); extension-type ids (`GroupId`/`UserId`, charter §7-A candidate); enqueue-time sync kick + backoff (deferred, Phase 1); `logging_command_sender.dart` deletable if the swap example is no longer wanted; `.gitattributes` to pin `*.sh` to LF; **branch protection — deferred by plan tier (see "Where we are").**
+5. **Pending small items:** MVVM-command verdict (seeded in ADR-023, still Open); migrate `groups_page_test.dart` to mocktail + retire hand-rolled `MockGroupsRepository` (keep `_FakeOutbox` as a fake — developer exercise); extension-type ids (`GroupId`/`UserId`, charter §7-A candidate); enqueue-time sync kick + backoff (deferred, Phase 1); `logging_command_sender.dart` deletable if the swap example is no longer wanted; `.gitattributes` to pin `*.sh` to LF; **branch protection — deferred by plan tier (see "Where we are").**
 
 ## ADR state (real files in `docs/adr/`, 001–024)
 

@@ -8,7 +8,9 @@ class AppBlocObserver extends BlocObserver {
 
   @override
   void onError(BlocBase<dynamic> bloc, Object error, StackTrace stackTrace) {
-    _talker.handle(error, stackTrace);
+    // Names the net and the bloc: with one observer for every bloc, the type
+    // is the only clue about where the error came from.
+    _talker.handle(error, stackTrace, 'net 4 · Bloc · ${bloc.runtimeType}');
     super.onError(bloc, error, stackTrace);
   }
 }

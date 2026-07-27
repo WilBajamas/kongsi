@@ -8,6 +8,10 @@ import 'package:kongsi/l10n/l10n_extension.dart';
 /// matter where the user has navigated to, so the warning can't belong to a
 /// single page.
 ///
+/// ! Built above the Navigator, which is what supplies the Overlay — so no
+/// ! Tooltip, SnackBar or popup menu in here; they look one up and throw at
+/// ! build time.
+///
 /// Deliberately minimal for now — it satisfies ADR-024's "never fail
 /// silently" and nothing more. The real UX is unplanned; open questions are
 /// listed in the learning log under "Sync-failure UX".

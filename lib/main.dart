@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kongsi/app/debug/debug_entry.dart';
 import 'package:kongsi/app/router/router_provider.dart';
 import 'package:kongsi/app/sync_problems/cubits/sync_problems_cubit.dart';
 import 'package:kongsi/app/sync_problems/widgets/sync_problems_banner.dart';
@@ -36,8 +37,9 @@ class MainApp extends ConsumerWidget {
         theme: AppTheme.light,
         darkTheme: AppTheme.dark,
         // themeMode defaults to ThemeMode.system; user-controllable later.
-        builder: (context, child) =>
-            SyncProblemsBanner(child: child ?? const SizedBox.shrink()),
+        builder: (context, child) => DebugEntry(
+          child: SyncProblemsBanner(child: child ?? const SizedBox.shrink()),
+        ),
       ),
     );
   }
