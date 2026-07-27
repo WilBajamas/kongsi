@@ -1,55 +1,75 @@
 # Kongsi — Session Handover
 
-> Temporary working doc to hand context to a fresh agent session. Safe to delete once absorbed.
-> Last updated: 2026-07-23.
+> Working doc that hands context to a fresh agent session. Keep it current; it is
+> the first thing the next session reads.
+> Last updated: 2026-07-28.
 
 ## How to use this file
 
-You (the next agent) are **mentoring** the developer through building **Kongsi** by hand, following the Phase 0 plan in `kongsi_project_charter.md` §6-A. Read this file, then skim `docs/adr/README.md` and the charter. The working-style rules load automatically from the project's `MEMORY.md` — follow them.
+You (the next agent) are **mentoring** the developer through building **Kongsi** by hand. Read this file, then skim `docs/adr/README.md` and the charter (`kongsi_project_charter.md`). The working-style rules load automatically from the project's `MEMORY.md` — follow them.
 
-**One-line project summary:** offline-first shared-expense app (Flutter first, native Android later), built deliberately as a learning + senior→lead interview showcase. Full context in `kongsi_project_charter.md` + `kongsi_design_brief.md`. The Phase-0 story (what/why/war stories/decisions) is captured in `docs/technical-summary.md`; open gaps in `docs/learning-log.md`.
+**One-line project summary:** offline-first shared-expense app (Flutter first, native Android later), built deliberately as a learning + senior→lead interview showcase. Full context in `kongsi_project_charter.md` + `kongsi_design_brief.md`. The Phase-0 story (what/why/war stories/decisions) is in `docs/technical-summary.md`; per-module flow diagrams in `docs/diagrams/`; open gaps and lessons in `docs/learning-log.md`.
 
-## Working style (auto-loaded from MEMORY.md + confirmed again this session)
+## Working style (auto-loaded from MEMORY.md + confirmed over several sessions)
 
-- **Mentor, don't implement — but the balance shifted.** The developer now often delegates writing to the agent after a design walkthrough ("delegating to you"), then reads, questions, and reshapes the result. Still: walk through design decisions *before* code, explain what/why/how, plain simple English.
-- **The developer asks deep "is this right?" questions** (e.g. mutable static state of `Bloc.observer`, all-purpose dialogs, Navigator vs auto_route pop). Give honest trade-off debates, not reassurance. They push back and propose alternatives — debate them properly (their record-list registry idea won over the agent's function design).
+- **Mentor, don't implement — but the balance shifted.** The developer often delegates writing after a design walkthrough ("delegating to you"), then reads, questions, and reshapes the result. Still: walk through design decisions *before* code, explain what/why/how, plain simple English.
+- **The developer asks deep "is this right?" questions** and finds real holes — the biggest correctness bug of Phase 0 (silent sync data loss, ADR-024) came from them interrogating the dead-letter path, not from a crash. **Give honest trade-off debates, not reassurance.** When they push back, debate properly; they are often right, and they will notice hedging.
+- **Say when you're wrong, plainly, and say what's unverified.** Several claims in this project were documented in three or four places and never once executed. Do not describe unrun code as working.
 - **PowerShell** syntax, **`fvm` prefix** for developer-facing commands.
-- **Respect their edits** — they rename (e.g. `fake_`→`mock_`, `watch_groups`→`watch_groups_use_case`/`WatchGroupsUseCase`), add their own warning comments, restructure. Never revert.
-- **Comment style:** why not what; no ADR refs in code. This session they asked for *teaching-level* comments on the sync machinery specifically — that was an exception, on request.
+- **Respect their edits** — they rename, trim comments, restructure. Never revert.
+- **Comment style:** why not what; no ADR refs in code. `// !` prefix for genuine traps.
 - **Commits:** brief conventional messages, **NO AI signature/co-author trailer**. Split logical units. Developer sometimes commits themselves mid-flow — check `git log` before assuming.
-- **Widget rules (stated explicitly):** lean, dumb widgets reacting to state; split when readability demands; no gratuitous `Builder`s; reuse via composition (slots) not configuration (flags); new widgets only with strict feature ownership.
-- **Modern Dart is a standing goal** — charter §7-A has the checklist + mentoring rule: flag Dart 3.x opportunities as code is written; one-line "why over the old way" on first use.
-- **No CLAUDE.md / .agent files.**
+- **Widget rules:** lean, dumb widgets reacting to state; split when readability demands; no gratuitous `Builder`s; reuse via composition (slots) not configuration (flags); new widgets only with strict feature ownership.
+- **Modern Dart is a standing goal** — charter §7-A checklist; flag Dart 3.x opportunities as code is written, one-line "why over the old way" on first use.
+- **No CLAUDE.md / .agent files.** No exams (dropped 2026-07-27; see charter §6-A).
 
 ## Where we are
 
-**Phase 0 — nearly done, three DoD boxes still open** (see "What's next"). The Post-Phase-0 consolidation (charter §6-A) *is* finished: the [technical summary](docs/technical-summary.md) and the seven per-module [flow diagrams](docs/diagrams/) are both done. Walking skeleton end-to-end (local + outbox + Supabase sync, device-verified online *and* offline); dead-letter + failure surfacing (ADR-024); connectivity trigger (native EventChannel, both steps); and **Chunk C done — a signed staging APK auto-distributes to Firebase App Distribution** via Bitrise + fastlane on push to `develop`, device-verified. Onboarding captured (bootstrap scripts + README).
+**Phase 0 is done bar one Definition-of-Done box.** The walking skeleton runs end to end (local write → outbox → Supabase), device-verified online *and* offline. Post-Phase-0 consolidation is complete: `docs/technical-summary.md` and seven per-module diagrams in `docs/diagrams/`.
 
-Real Supabase **and Firebase** projects exist; `config/dev.json` filled (gitignored). `groups` table created with **RLS disabled** for the skeleton (re-enabled when auth lands — real policies need `auth.uid()`).
+Built and verified: dead-letter + user-facing failure surfacing (ADR-024) · connectivity `EventChannel` (native → Dart, both steps) · four global error nets (three of them actually fire — see below) · signed staging APK auto-distributing to Firebase App Distribution via Bitrise + fastlane on push to `develop` · CI building all three flavors, prod in release mode.
 
-**Branch protection on `main` — DEFERRED (external constraint, not an oversight).** GitHub gates branch-protection/rulesets behind a paid tier for *private* repos, and this repo is Free + private. Revisit on going public or GitHub Pro; meanwhile the PR-into-`main` flow is followed by discipline.
+Real Supabase **and Firebase** projects exist; `config/dev.json` filled (gitignored). `groups` table has **RLS disabled** — real policies need `auth.uid()`, so this is Phase 1 work.
 
-Branch `develop`. Several commits **unpushed** — push `develop` to sync origin (and let CI confirm the iOS Swift stub compiles on the macOS runner). analyze `--fatal-infos` clean, tests **25/25**, format clean. Sandbox: `./.fvm/flutter_sdk/bin/flutter …` (fvm CLI not on sandbox PATH).
+**Branch protection on `main` — DEFERRED (external constraint, not an oversight).** GitHub gates branch-protection/rulesets behind a paid tier for *private* repos, and this repo is Free + private. Revisit on going public or GitHub Pro; PR-into-`main` by discipline meanwhile.
 
-## What's next
+Branch `develop`, pushed. analyze `--fatal-infos` clean, **25/25 tests**, format clean. Sandbox: `./.fvm/flutter_sdk/bin/flutter …` (fvm CLI not on sandbox PATH).
 
-**One Phase 0 DoD box is still open** (charter §6-A). Everything else on that list is ticked.
+## Decision needed before Phase 1 starts
 
-1. ~~Verify the four error nets with a deliberate crash.~~ **DONE (2026-07-28)** — device-verified with a throwaway probe page, since removed (see git history if it's ever needed again). Each net now **tags its own name** when it hands off to the logger (`net 1 · FlutterError` … `net 4 · Bloc · <type>`), so a log line says which net caught it — without that they were indistinguishable, and you couldn't tell whether a given net ever fired at all.
-2. ~~`prod` flavor has never been built.~~ **DONE (2026-07-28)** — `app-prod-release.apk` built locally, clean. `ci.yml`'s `build-android` job is now a **matrix over all three flavors** (`fail-fast: false`), with **prod in `--release`** on purpose: debug and release diverge, which this project already got bitten by once (INTERNET was debug-manifest-only, so a release build would have shipped with no network and a debug-only CI would never have noticed). Release signing still uses the debug key, so no secrets needed. `build-ios` stays flavor-less — iOS flavors need Xcode schemes and only `Runner` exists.
-3. **Clone-from-zero never tested — the last open DoD box.** The bootstrap scripts exist but have never been run on a clean machine, which is the whole point of them (it's what catches machine-level traps like the native-assets flag).
+**One DoD box is still open: clone-from-zero has never been tested.** The bootstrap scripts exist but have never been run on a clean machine — which is the entire point of them, since they exist to catch machine-level setup that isn't in the repo (the `--enable-native-assets` flag is the known one; the unknown ones are why the test matters).
 
-Then, outside the DoD:
+The charter is explicit: *"Do not start Phase 1 until every box is ticked."* So the first thing to settle is whether to **do it** (needs a second machine, a VM, or a container) or **consciously waive it** and note the waiver. Don't let it slide silently — that would be the exact failure mode this project keeps catching.
 
-4. **Device-verify the upsert (ADR-024).** `resolution=merge-duplicates` is written but the duplicate-push path has never hit the real backend: send a slip, re-send the same one (comment out the `delete`), confirm it no longer returns 409. Until checked, at-least-once is written but unproven.
-   - **The sync-failure UX is a deliberate placeholder** — satisfies "never fail silently" and nothing more. Open questions in the learning log under "Sync-failure UX".
-   - Related open threads (base-version tracking, dependent-slip cascade) also in the learning log.
-5. **Kotlin Gradle Plugin deprecation (new, 2026-07-28).** Every Android build now warns: *"applies the Kotlin Gradle Plugin, which will cause build failures in future versions of Flutter"* — migrate to built-in Kotlin ([guide](https://docs.flutter.dev/release/breaking-changes/migrate-to-built-in-kotlin/for-app-developers)). Harmless today, a hard break on some future Flutter bump. Worth doing before it's forced.
-6. **Pending small items:** MVVM-command verdict (seeded in ADR-023, still Open); migrate `groups_page_test.dart` to mocktail + retire hand-rolled `MockGroupsRepository` (keep `_FakeOutbox` as a fake — developer exercise); extension-type ids (`GroupId`/`UserId`, charter §7-A candidate); enqueue-time sync kick + backoff (deferred, Phase 1); `logging_command_sender.dart` deletable if the swap example is no longer wanted; `.gitattributes` to pin `*.sh` to LF; **branch protection — deferred by plan tier (see "Where we are").**
+## Phase 1 — Auth & session (charter §18)
+
+Scope: Supabase auth · the hand-built 401→refresh→retry interceptor facing a **real** 401 · secure token storage · biometric app-lock (**MethodChannel #1**, charter §8) · logout-everywhere.
+
+Phase 1 also unblocks or settles several things left open on purpose:
+
+- **`AuthInterceptor` has never seen a real 401.** It is written and unit-tested, with a refresh lock and a retry guard, but `NoAuthTokenProvider` means it has never fired in anger. Charter §20 says hand-build it once rather than lean on the SDK — that's done; this is where it earns its keep. See ADR-018 for who owns refresh.
+- **RLS policies** can finally be written (they need `auth.uid()`).
+- **Enqueue-time sync kick** — a write made while already online currently waits for the next launch or reconnect. Cheap to add (fire `SyncRequested` after a successful enqueue; `droppable` already guards overlap), bundled with the first real write feature.
+- **MVVM `CommandCubit` verdict** (ADR-023) is judged at its *second* use site — Phase 2, not here, but keep it in mind.
+
+## Also outstanding (not Phase 0 blockers)
+
+1. **Device-verify the ADR-024 upsert.** `Prefer: resolution=merge-duplicates` is written but the duplicate-push path has never hit the real backend: send a slip, re-send the same one (comment out the `delete`), confirm it no longer returns 409. Until checked, at-least-once is written but unproven.
+2. **`SyncProblemsBanner` is an explicit stopgap** — it satisfies ADR-024's "never fail silently" and nothing more, and is meant to be **replaced, not grown**. Its own doc comment says so; open questions in the learning log under "Sync-failure UX". The deepest one: the banner can't name *which* change failed, because outbox slips carry an opaque payload and can't describe themselves — fixing that is a core-sync change, not a UI one.
+3. **Error net 2 never fires.** `PlatformDispatcher.onError` receives nothing, because `bootstrap` wraps the whole app in `runZonedGuarded` and the zone handler claims everything first. Left as-is deliberately; note that since Flutter 3.3 net 2 is the *recommended* catch-all and the zone is the legacy approach, so this setup has the legacy net doing the work. Changing it needs its own measurement, not an assumption.
+4. **Kotlin Gradle Plugin deprecation.** Every Android build warns it "will cause build failures in future versions of Flutter" — [migration guide](https://docs.flutter.dev/release/breaking-changes/migrate-to-built-in-kotlin/for-app-developers). Harmless today, a dated fuse that will go off on some future Flutter bump.
+5. **Deeper sync threads, all recorded in the learning log:** no base-version tracking (so a failed change can't be rolled back *in principle*, and ADR-006's LWW can't detect a stale write) · dependent-slip cascade after a dead-letter (harmless until Phase 2 adds dependent commands) · exponential backoff (needs a retry timer that doesn't exist).
+6. **Small items:** migrate `groups_page_test.dart` to mocktail + retire the hand-rolled `MockGroupsRepository` (keep `_FakeOutbox` as a fake — developer exercise) · extension-type ids (`GroupId`/`UserId`, charter §7-A candidate) · `logging_command_sender.dart` deletable if the swap-seam example stops earning its place · `.gitattributes` to pin `*.sh` to LF.
 
 ## ADR state (real files in `docs/adr/`, 001–024)
 
-Full index + status in `docs/adr/README.md`. Notable: **010 go_router — Superseded by 020** (auto_route) · 006 LWW *(Proposed — carries a 2026-07-27 addendum: its analysis misses the write-never-arrives loss case)* · 007 deep-link *(Open, Phase 4)* · 017 import-boundary *(Deferred)* · 023 MVVM-command verdict *(Open)* · **024 surface failed syncs** *(Accepted, not built — next task)*.
+Full index + status in `docs/adr/README.md`. Notable: **010 go_router — Superseded by 020** (auto_route) · **006 LWW** *(Proposed — carries a 2026-07-27 addendum: its analysis misses the write-never-arrives loss case, and base-version tracking is its likely successor)* · **007** deep-link *(Open, Phase 4)* · **017** import-boundary *(Deferred)* · **018** token-refresh ownership *(relevant to Phase 1)* · **023** MVVM-command verdict *(Open — verdict at 2nd use site, Phase 2)* · **024** surface failed syncs *(Accepted and built)*.
+
+## A pattern worth carrying forward
+
+Three separate times in Phase 0, something was documented in several places and had **never been executed**: the PostgREST upsert header (so at-least-once was aspirational for the whole phase), the four error nets (one of which turned out to be dead), and the idempotency guarantee that depended on the header. Each was found by *deliberately running the thing*, not by review.
+
+The rule that came out of it: **a guarantee that lives in a design doc but not in a line of code isn't a guarantee.** For any claim of that shape, ask which code enforces it and whether that path has ever actually run.
 
 ## Environment gotchas
 
@@ -59,5 +79,7 @@ Full index + status in `docs/adr/README.md`. Notable: **010 go_router — Supers
 - **Benign device log noise:** `IllegalArgumentException ... surface control` from the Android graphics layer during surface rebuilds — not ours, no crash; ignore unless it escalates.
 - **Codegen committed** (Drift `.g.dart`, auto_route `.gr.dart`, json_serializable `.g.dart`, l10n `gen/`). Regen: `fvm dart run build_runner build --delete-conflicting-outputs`; l10n: `fvm flutter gen-l10n`; goldens: `fvm flutter test --update-goldens` (then eyeball the png).
 - **Goldens:** CI asserts `goldens/ci/` only, with `diffThreshold: 0.001`; platform goldens local-only (gitignored); failure diffs in `test/**/failures/` (gitignored, uploaded as CI artifact on failure).
-- **Conventions:** interface+impl in separate files; `abstract interface class` for contracts; `package:` imports in `lib/`; validate with analyze before moving on; l10n keys for every user-visible string (en/ms/zh); run-on-device command: `fvm flutter run --flavor dev -t lib/main_dev.dart --dart-define-from-file=config/dev.json`.
+- **Widgets built in `MaterialApp.builder` sit ABOVE the Navigator** — no `Tooltip`, `SnackBar`, or popup menu there (they look up an `Overlay` and throw at build time), and navigation must go through the router's `navigatorKey`. `SyncProblemsBanner` lives there; both constraints are commented in place.
+- **Widget tests:** `pumpEventQueue()` **deadlocks** inside `testWidgets` (fake-async zone). For stream → bloc → widget, use `tester.runAsync(...)` then `pump()` — see `test/app/sync_problems/sync_problems_banner_test.dart`.
+- **Conventions:** interface+impl in separate files; `abstract interface class` for contracts; `package:` imports in `lib/`; validate with analyze before moving on; l10n keys for every user-visible string (en/ms/zh); run-on-device: `fvm flutter run --flavor dev -t lib/main_dev.dart --dart-define-from-file=config/dev.json`.
 - **Analyzer-clash ledger** (full version in `docs/technical-summary.md` §15): riverpod_generator OUT (analyzer clash with drift_dev); freezed stable OUT (only 4.0.0-dev resolves); auto_route, alchemist, json_serializable, retrofit_generator, mocktail, bloc_concurrency all fine.
