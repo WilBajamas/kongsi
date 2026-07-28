@@ -44,4 +44,49 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get syncProblemsRetry => 'Cuba lagi';
+
+  @override
+  String get welcomePromise =>
+      'Kongsi perbelanjaan dengan rakan. Walaupun di luar talian.';
+
+  @override
+  String get welcomeGetStarted => 'Mula sekarang';
+
+  @override
+  String get welcomeHaveAccount => 'Saya sudah ada akaun';
+
+  @override
+  String get signInTitle => 'Log masuk';
+
+  @override
+  String get signUpTitle => 'Cipta akaun';
+
+  @override
+  String get emailLabel => 'E-mel';
+
+  @override
+  String get passwordLabel => 'Kata laluan';
+
+  @override
+  String get authContinue => 'Teruskan';
+
+  @override
+  String get authLegalFootnote =>
+      'Dengan meneruskan, anda bersetuju dengan terma dan dasar privasi kami.';
+
+  @override
+  String get emailInvalid => 'Masukkan e-mel yang sah untuk teruskan.';
+
+  @override
+  String get passwordTooShort => 'Gunakan sekurang-kurangnya 8 aksara.';
+
+  @override
+  String get authFailedCredentials => 'E-mel atau kata laluan salah.';
+
+  @override
+  String get authFailedNetwork =>
+      'Tiada sambungan. Semak internet anda dan cuba lagi.';
+
+  @override
+  String get authFailedUnknown => 'Ada sesuatu yang tidak kena. Cuba lagi.';
 }

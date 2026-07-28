@@ -44,5 +44,61 @@
     "syncProblemsRetry": "Retry",
     "@syncProblemsRetry": {
         "description": "Button on the sync-problems banner that re-queues every stuck change."
+    },
+    "welcomePromise": "Split expenses with friends. Even offline.",
+    "@welcomePromise": {
+        "description": "One-line value proposition on the welcome screen."
+    },
+    "welcomeGetStarted": "Get started",
+    "@welcomeGetStarted": {
+        "description": "Primary button on the welcome screen; opens sign-up."
+    },
+    "welcomeHaveAccount": "I have an account",
+    "@welcomeHaveAccount": {
+        "description": "Text button on the welcome screen; opens sign-in."
+    },
+    "signInTitle": "Sign in",
+    "@signInTitle": {
+        "description": "Title of the auth screen in sign-in mode."
+    },
+    "signUpTitle": "Create account",
+    "@signUpTitle": {
+        "description": "Title of the auth screen in sign-up mode."
+    },
+    "emailLabel": "Email",
+    "@emailLabel": {
+        "description": "Label for the email field on the auth screen."
+    },
+    "passwordLabel": "Password",
+    "@passwordLabel": {
+        "description": "Label for the password field on the auth screen."
+    },
+    "authContinue": "Continue",
+    "@authContinue": {
+        "description": "Primary submit button on the auth screen."
+    },
+    "authLegalFootnote": "By continuing you agree to our terms and privacy policy.",
+    "@authLegalFootnote": {
+        "description": "Legal footnote under the auth screen's submit button."
+    },
+    "emailInvalid": "Enter a valid email to continue.",
+    "@emailInvalid": {
+        "description": "Inline validation shown when the email field is empty or malformed."
+    },
+    "passwordTooShort": "Use at least 8 characters.",
+    "@passwordTooShort": {
+        "description": "Inline validation shown when the password is too short."
+    },
+    "authFailedCredentials": "Email or password is incorrect.",
+    "@authFailedCredentials": {
+        "description": "Shown when the server rejects the sign-in attempt."
+    },
+    "authFailedNetwork": "No connection. Check your internet and try again.",
+    "@authFailedNetwork": {
+        "description": "Shown when the sign-in attempt could not reach the server."
+    },
+    "authFailedUnknown": "Something went wrong. Try again.",
+    "@authFailedUnknown": {
+        "description": "Fallback shown when a sign-in attempt fails for any other reason."
     }
 }

@@ -15,7 +15,7 @@ class GroupsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return BlocProvider(
-      create: (_) => GroupsCubit(ref.read(watchGroupsUseCaseProvider)),
+      create: (_) => GroupsCubit(ref.read(groupsRepositoryProvider)),
       child: Scaffold(
         floatingActionButton: FloatingActionButton(
           onPressed: () => showDialog<void>(

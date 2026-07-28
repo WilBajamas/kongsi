@@ -29,7 +29,10 @@ class MainApp extends ConsumerWidget {
         ref.read(syncBlocProvider),
       ),
       child: MaterialApp.router(
-        routerConfig: router.config(),
+        // Re-runs the guards when the session ends without us navigating.
+        routerConfig: router.config(
+          reevaluateListenable: ref.watch(sessionListenableProvider),
+        ),
         onGenerateTitle: (context) => context.l10n.appTitle,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,

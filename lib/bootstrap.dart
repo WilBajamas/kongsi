@@ -9,6 +9,7 @@ import 'package:kongsi/app/command_registrations.dart';
 import 'package:kongsi/core/config/app_config.dart';
 import 'package:kongsi/core/di/core_providers.dart';
 import 'package:kongsi/core/logger/app_logger.dart';
+import 'package:kongsi/core/storage/secure_session_storage.dart';
 import 'package:kongsi/core/sync/command_registry.dart';
 import 'package:kongsi/core/sync/sync_event.dart';
 import 'package:kongsi/features/groups/data/dev_seed.dart';
@@ -44,6 +45,9 @@ void bootstrap(AppConfig config) {
         await Supabase.initialize(
           url: config.supabaseUrl,
           publishableKey: config.supabaseAnonKey,
+          authOptions: const FlutterAuthClientOptions(
+            localStorage: SecureSessionStorage(),
+          ),
         );
 
         // Hand-built container so startup work and widgets share one graph.

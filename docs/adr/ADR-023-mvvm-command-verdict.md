@@ -68,6 +68,34 @@ answers itself:
 Provisional lean: **A for now**, because deleting the experiment before its second
 use site would be judging reuse from a sample of one.
 
+## Evidence — 2026-07-28, Phase 1 chunk 3 (sign-in form)
+
+The sign-in form looked like a textbook second use site: an async submit, a
+button to disable, a failure to show. `CommandCubit` could not take it.
+
+`CommandCubit.execute` reports failure by **catching an exception**
+(`lib/app/command/cubits/command_cubit.dart:17`). That works for
+`CreateGroupUseCase` only because `DriftGroupsRepository` lets Drift exceptions
+escape the data layer — which [ADR-009](ADR-009-error-model.md) actually forbids,
+noted separately. `AuthRepository.signIn` follows ADR-009 properly and returns a
+typed `Result`, never throwing. Wrapped in `CommandCubit`, a rejected password
+would complete normally and be reported as a **success**.
+
+So the sign-in form got a small dedicated `SignInCubit` with a sealed state.
+
+**What this is evidence of, and what it is not.** It is not the verdict — this is
+not the like-for-like comparison the criterion above asks for, since the mismatch
+is about the error channel, not about reuse ceremony. It does sharpen the
+boundary: `CommandCubit` fits fire-and-forget actions that signal failure by
+throwing, and stops fitting the moment an action returns a typed result the
+caller must read. Given ADR-009 says the typed result is the house style, the
+population of actions `CommandCubit` can serve is smaller than it looked when the
+wrapper was written.
+
+That is a point for **D** without settling it. The verdict still belongs at
+Phase 2's add-expense, which goes through a use case of the same shape as
+create-group.
+
 ## Consequences
 
 - Until the verdict, `CommandCubit` stays as the single documented MVVM-Command

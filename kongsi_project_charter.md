@@ -42,7 +42,7 @@ Assume a wide device range (old Android included), so battery/memory/app-size di
 ## 3. Scope
 
 ### MVP (v1) — must exist
-- Email/password + magic-link auth; session with silent token refresh.
+- Email/password auth (magic link dropped — ADR-025); session with silent token refresh.
 - Create group; invite a member via link.
 - Add / edit / delete an expense (payer, amount, split equally or by weighted share).
 - Group balances ("who owes whom") + simple settle-up (record a payment).
@@ -256,6 +256,8 @@ Phase 0 ends with understanding, not just working code. Two deliverables, in ord
 - **MVI** (immutable `UiState` + `Intent`/`Action` + reducer) with Compose — your growth goal.
 - **Hilt** for DI, Coroutines/Flow, Room. Same Command/outbox concept in Kotlin.
 
+**Use cases exist only when they hold logic.** A use case that forwards one call to a repository adds a file, a provider and an indirection while changing nothing — the Cubit talks to the repository interface directly instead, and layering still holds because that interface lives in `domain`. Write one the moment there is real work to hold: composing several repositories, generating ids or timestamps, or enforcing a rule. *(Decided 2026-07-28, after `WatchGroupsUseCase` — a pure pass-through — was deleted. `CreateGroupUseCase` stays: it mints the id, stamps the clock, and builds the entity.)*
+
 > Interview line: "I used Riverpod for DI and Bloc/Cubit for feature state — separation of dependency-provision from state-management — and modeled every write as a Command so offline sync, retry, and undo fell out of one abstraction."
 
 ## 7-A. Modern Dart usage (deliberate practice, all phases)
@@ -322,7 +324,7 @@ Key rules:
 ## 10. Backend & API design
 
 **Supabase (primary)**
-- **Auth:** email/password + magic link. You receive an **`access_token` (JWT, ~1h)** and a **`refresh_token`**. The SDK auto-refreshes; you additionally implement an **HTTP interceptor** (on `dio`) that catches `401`, refreshes, retries — *this is the token exercise; build it by hand at least once.*
+- **Auth:** email/password. *(Magic link is out of the MVP — ADR-025; password reset needs the same emailed-link handling and lands in Phase 4.)* You receive an **`access_token` (JWT, ~1h)** and a **`refresh_token`**. The SDK auto-refreshes; you additionally implement an **HTTP interceptor** (on `dio`) that catches `401`, refreshes, retries — *this is the token exercise; build it by hand at least once.*
 - **DB / API:** Postgres with auto-generated PostgREST endpoints; also `supabase-flutter` client.
 - **Realtime:** subscribe to group row changes → upsert into local DB (v2).
 - **Storage:** receipt images (v2).

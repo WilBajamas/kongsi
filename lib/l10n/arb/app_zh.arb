@@ -9,5 +9,19 @@
     "create": "创建",
     "createGroupFailed": "无法创建群组，请重试。",
     "syncProblemsBanner": "{count, plural, other{{count} 项更改无法保存}}",
-    "syncProblemsRetry": "重试"
+    "syncProblemsRetry": "重试",
+    "welcomePromise": "和朋友分摊开销，离线也能用。",
+    "welcomeGetStarted": "开始使用",
+    "welcomeHaveAccount": "我已有账号",
+    "signInTitle": "登录",
+    "signUpTitle": "创建账号",
+    "emailLabel": "邮箱",
+    "passwordLabel": "密码",
+    "authContinue": "继续",
+    "authLegalFootnote": "继续即表示你同意我们的条款和隐私政策。",
+    "emailInvalid": "请输入有效的邮箱以继续。",
+    "passwordTooShort": "请使用至少 8 个字符。",
+    "authFailedCredentials": "邮箱或密码不正确。",
+    "authFailedNetwork": "无网络连接。请检查网络后重试。",
+    "authFailedUnknown": "出了点问题，请重试。"
 }

@@ -10,6 +10,8 @@ You (the next agent) are **mentoring** the developer through building **Kongsi**
 
 **One-line project summary:** offline-first shared-expense app (Flutter first, native Android later), built deliberately as a learning + senior→lead interview showcase. Full context in `kongsi_project_charter.md` + `kongsi_design_brief.md`. The Phase-0 story (what/why/war stories/decisions) is in `docs/technical-summary.md`; per-module flow diagrams in `docs/diagrams/`; open gaps and lessons in `docs/learning-log.md`.
 
+**Before writing any code, read [`docs/conventions.md`](docs/conventions.md)** — the day-to-day rules (layering, error handling, widgets, forms, tests, comments) collected in one place, with links to the ADRs behind them.
+
 ## Working style (auto-loaded from MEMORY.md + confirmed over several sessions)
 
 - **Mentor, don't implement — but the balance shifted.** The developer often delegates writing after a design walkthrough ("delegating to you"), then reads, questions, and reshapes the result. Still: walk through design decisions *before* code, explain what/why/how, plain simple English.

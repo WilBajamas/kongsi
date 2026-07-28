@@ -45,4 +45,48 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncProblemsRetry => 'Retry';
+
+  @override
+  String get welcomePromise => 'Split expenses with friends. Even offline.';
+
+  @override
+  String get welcomeGetStarted => 'Get started';
+
+  @override
+  String get welcomeHaveAccount => 'I have an account';
+
+  @override
+  String get signInTitle => 'Sign in';
+
+  @override
+  String get signUpTitle => 'Create account';
+
+  @override
+  String get emailLabel => 'Email';
+
+  @override
+  String get passwordLabel => 'Password';
+
+  @override
+  String get authContinue => 'Continue';
+
+  @override
+  String get authLegalFootnote =>
+      'By continuing you agree to our terms and privacy policy.';
+
+  @override
+  String get emailInvalid => 'Enter a valid email to continue.';
+
+  @override
+  String get passwordTooShort => 'Use at least 8 characters.';
+
+  @override
+  String get authFailedCredentials => 'Email or password is incorrect.';
+
+  @override
+  String get authFailedNetwork =>
+      'No connection. Check your internet and try again.';
+
+  @override
+  String get authFailedUnknown => 'Something went wrong. Try again.';
 }

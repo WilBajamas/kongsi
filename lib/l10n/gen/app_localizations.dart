@@ -159,6 +159,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Retry'**
   String get syncProblemsRetry;
+
+  /// One-line value proposition on the welcome screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Split expenses with friends. Even offline.'**
+  String get welcomePromise;
+
+  /// Primary button on the welcome screen; opens sign-up.
+  ///
+  /// In en, this message translates to:
+  /// **'Get started'**
+  String get welcomeGetStarted;
+
+  /// Text button on the welcome screen; opens sign-in.
+  ///
+  /// In en, this message translates to:
+  /// **'I have an account'**
+  String get welcomeHaveAccount;
+
+  /// Title of the auth screen in sign-in mode.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get signInTitle;
+
+  /// Title of the auth screen in sign-up mode.
+  ///
+  /// In en, this message translates to:
+  /// **'Create account'**
+  String get signUpTitle;
+
+  /// Label for the email field on the auth screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get emailLabel;
+
+  /// Label for the password field on the auth screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get passwordLabel;
+
+  /// Primary submit button on the auth screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get authContinue;
+
+  /// Legal footnote under the auth screen's submit button.
+  ///
+  /// In en, this message translates to:
+  /// **'By continuing you agree to our terms and privacy policy.'**
+  String get authLegalFootnote;
+
+  /// Inline validation shown when the email field is empty or malformed.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid email to continue.'**
+  String get emailInvalid;
+
+  /// Inline validation shown when the password is too short.
+  ///
+  /// In en, this message translates to:
+  /// **'Use at least 8 characters.'**
+  String get passwordTooShort;
+
+  /// Shown when the server rejects the sign-in attempt.
+  ///
+  /// In en, this message translates to:
+  /// **'Email or password is incorrect.'**
+  String get authFailedCredentials;
+
+  /// Shown when the sign-in attempt could not reach the server.
+  ///
+  /// In en, this message translates to:
+  /// **'No connection. Check your internet and try again.'**
+  String get authFailedNetwork;
+
+  /// Fallback shown when a sign-in attempt fails for any other reason.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong. Try again.'**
+  String get authFailedUnknown;
 }
 
 class _AppLocalizationsDelegate

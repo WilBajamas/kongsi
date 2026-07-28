@@ -9,5 +9,19 @@
     "create": "Cipta",
     "createGroupFailed": "Kumpulan tidak dapat dicipta. Cuba lagi.",
     "syncProblemsBanner": "{count, plural, other{{count} perubahan tidak dapat disimpan}}",
-    "syncProblemsRetry": "Cuba lagi"
+    "syncProblemsRetry": "Cuba lagi",
+    "welcomePromise": "Kongsi perbelanjaan dengan rakan. Walaupun di luar talian.",
+    "welcomeGetStarted": "Mula sekarang",
+    "welcomeHaveAccount": "Saya sudah ada akaun",
+    "signInTitle": "Log masuk",
+    "signUpTitle": "Cipta akaun",
+    "emailLabel": "E-mel",
+    "passwordLabel": "Kata laluan",
+    "authContinue": "Teruskan",
+    "authLegalFootnote": "Dengan meneruskan, anda bersetuju dengan terma dan dasar privasi kami.",
+    "emailInvalid": "Masukkan e-mel yang sah untuk teruskan.",
+    "passwordTooShort": "Gunakan sekurang-kurangnya 8 aksara.",
+    "authFailedCredentials": "E-mel atau kata laluan salah.",
+    "authFailedNetwork": "Tiada sambungan. Semak internet anda dan cuba lagi.",
+    "authFailedUnknown": "Ada sesuatu yang tidak kena. Cuba lagi."
 }

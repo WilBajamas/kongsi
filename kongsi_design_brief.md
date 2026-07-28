@@ -166,42 +166,41 @@ For each: purpose · key elements · states · copy notes.
 Purpose: one-screen value prop + entry. Elements: brand mark, one-line promise, "Get started" (primary) + "I have an account" (text). Copy: promise = "Split expenses with friends. Even offline."
 
 **2. Sign in / Sign up**
-Purpose: email + magic-link auth. Elements: email field, "Continue" (primary), "Email me a link instead" (secondary), legal footnote. States: idle, validating, error (inline, directive). Copy error: "Enter a valid email to continue."
+Purpose: email + password auth ([ADR-025](docs/adr/ADR-025-email-password-auth.md) — magic link is out of the MVP). Two separate screens reached from Welcome, sharing a layout but not code — they are expected to diverge (sign-up gains a display name and terms; sign-in gains password recovery and a biometric shortcut). Elements, both: email field, password field, "Continue" (primary), legal footnote. States: idle, validating, error (inline, directive). Copy error: "Enter a valid email to continue." No "forgot password" yet — it needs an emailed reset link, so it arrives with the deep-link work in Phase 4.
 
-**3. Magic link sent**
-Purpose: confirm + wait. Elements: mail icon, "Check your email", the address shown, "Open mail app", "Resend" (with cooldown). Copy: "We sent a sign-in link to name@email.com."
-
-**4. Biometric lock**
+**3. Biometric lock**
 Purpose: gate app open. Elements: lock glyph, "Unlock Kongsi", Face/Touch prompt trigger, "Use passcode" fallback. Minimal, centered.
 
-**5. Groups (home)**
+**4. Groups (home)**
 Purpose: overall standing + group list. Elements: **balance summary header** (large tabular hero: net "you owe / you're owed" across all groups), list of **group cards** (name, stacked member avatars, your balance in that group with direction encoding), FAB. States: loading (skeleton cards), empty ("No groups yet. Create one to start splitting." + "Create group"), offline banner, per-group pending badge if unsynced. 
 
-**6. Group detail**
+**5. Group detail**
 Purpose: the group's ledger + actions. Elements: header (group name, members, **your balance in this group**), primary actions ("Add expense", "Settle up"), **expense list** (paginated, newest first — each row: description, who paid, date, amount, your share, pending/failed chip if unsynced), section for "Balances" entry. States: loading, empty ("No expenses yet. Add the first one."), offline, optimistic (new expense appears instantly with a "Pending" chip), failed-sync row (with inline "Retry").
 
-**7. Add / Edit expense**
+**6. Add / Edit expense**
 Purpose: the hero action. Elements: **large amount input** (numeric keypad, tabular), description field, "Paid by" selector (default: you), "Split" selector (segmented: Equally / Exact / Shares), member list preview, "Save" (primary). States: validating (splits must sum to total — live), error, saving (optimistic — closes immediately, row shows pending). Copy: save button = "Add expense" (create) / "Save changes" (edit); the resulting toast says "Added" / "Saved" — same verb family.
 
-**8. Split editor**
+**7. Split editor**
 Purpose: divide the amount. Elements: segmented control (Equally / Exact amounts / Shares), per-member rows with editable value + running remainder indicator, live validation banner if it doesn't sum. Copy for mismatch: "RM3.50 left to assign" / "RM2.00 over — adjust a share."
 
-**9. Balances (who owes whom)**
+**8. Balances (who owes whom)**
 Purpose: simplified debts. Elements: list of directional debt rows ("Aisha owes you RM40", "You owe Ben RM15") with direction encoding, each with a "Settle" action. Note: shows the *simplified* set of transactions. Empty: "All settled up. 🎉" (restrained).
 
-**10. Settle up**
+**9. Settle up**
 Purpose: record a payment + the payoff moment. Elements: from → to, amount (prefilled with the owed sum, editable), "Record payment" (primary). **Success:** a brief, tasteful confirmation (check animation + "Settled") — the one delightful beat. Copy: button "Record payment" → toast "Settled". Note: MVP only *records* a settlement; no real money moves — make that unambiguous ("This records a payment you made outside the app").
 
-**11. Create group**
+**10. Create group**
 Purpose: start a group. Elements: name field, currency selector (locale default), add-members (from contacts or by email/link), "Create" (primary). States: validating, saving.
 
-**12. Invite**
+**11. Invite**
 Purpose: bring people in. Elements: shareable invite link (copy + native share), current members list, pending invites. Copy: "Anyone with this link can join {group}." Note for engineering: this is the deferred-deep-link entry — design a clean "You've been invited to {group}" landing for the not-yet-installed recipient (can be a later screen, flag it).
 
-**13. Account & settings**
+**12. Account & settings**
 Purpose: profile + controls, iOS grouped-list style. Groups: Profile (name, avatar, email) · Security ("App lock" biometric toggle) · Preferences (currency, appearance: system/light/dark) · About · Sign out (text) · **Delete account** (destructive, in its own group). States: confirm dialogs for sign-out and delete; delete explains data purge (GDPR-style).
 
-## 6. Component inventory (build these first)
+## 6. Component inventory (the expected set — built on demand)
+
+> **Design-side, build these first; engineering-side, do not.** In code a component is written when a screen actually needs it, then reused — charter §6-A warns against building a design system ahead of the screens that would use it. This list is the *expected* inventory, not a work queue. Rough arrival: buttons, text field and the empty-state template in Phase 1 (auth screens); group card, chips, offline banner, skeletons and the balance/currency components in Phase 2 (ledger); amount input, segmented control, bottom sheet and member/debt rows with add-expense and settle-up; avatars with invites in Phase 4.
 
 Buttons: primary (filled accent), secondary (tinted/outline), text, destructive. · Amount input (large, tabular, keypad). · Text field (grouped-list style + standalone). · Segmented control (split type, appearance). · List rows: group card, expense row, member row, debt row, settings row. · Avatar + stacked-avatar cluster. · Chips: pending, failed, split-type, currency. · Offline banner (persistent, calm). · Toast/snackbar. · Bottom sheet. · FAB. · Empty-state template (icon + line + CTA). · Skeleton loaders. · Balance summary header. · Currency amount display (the tabular money component — used everywhere).
 
@@ -215,6 +214,28 @@ Buttons: primary (filled accent), secondary (tinted/outline), text, destructive.
 | Offline | Persistent calm banner: "You're offline. Changes will sync when you're back." |
 | Optimistic | Item appears immediately with a "Pending" chip; resolves silently on sync |
 | Failed sync | Row shows "Failed" chip + inline "Retry"; never blocks the rest of the UI |
+
+## 7-A. Form validation (apply to every input in the app)
+
+Any field with a rule — email format, password length, phone number, an amount
+that must sum — follows the same timing, so validation never feels different from
+one screen to the next:
+
+1. **Silent while first typing.** No error before the user has tried to submit.
+   Telling someone their email is invalid after one character is nagging.
+2. **On submit, all rules run** and every failing field shows its message
+   directly beneath it.
+3. **After that, live.** While a field is showing an error it re-checks on every
+   keystroke and the message clears the moment the input becomes valid.
+
+In Flutter this is exactly `AutovalidateMode.onUserInteractionIfError` on the
+`Form` — not `onUserInteraction` (errors from the first keystroke) and not
+`onUnfocus` (the message goes stale while being fixed). Messages are directive
+per §8: "Enter a valid email to continue.", not "Invalid email".
+
+**Leaving a screen is not idle.** A form that has submitted successfully stays
+disabled until it is gone. Re-enabling it during the navigation makes the fields
+and button flash back to normal for a frame.
 
 ## 8. Voice & microcopy rules
 
