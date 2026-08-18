@@ -1,0 +1,185 @@
+# SCRATCH FILE — proposed rewrite of Fastfile, for review only.
+# fastlane does not load this file; nothing here runs until it replaces Fastfile.
+#
+# What changes vs. the current Fastfile, and why:
+#
+# 1. fastlane owns the *build*, not just the upload. Today the Flutter build
+#    lives in bitrise.yml and fastlane only uploads, which means the release
+#    recipe is split across a host-specific YAML and a Fastfile. Moving the
+#    build in makes `bundle exec fastlane android distribute_staging` the whole
+#    release — runnable from GitHub Actions, from Bitrise, or from a laptop,
+#    with the CI file reduced to "check out, install toolchains, call the lane".
+#    (fastlane's *gradle* actions still don't understand a Flutter build — the
+#    original comment stands. This shells out to `flutter` instead.)
+#
+# 2. No BITRISE_* env vars. `BITRISE_BUILD_NUMBER` / `BITRISE_GIT_COMMIT` are
+#    empty anywhere else, so on Actions today's release notes would render as
+#    "Staging build  · ". Both values are derived from git instead — which is
+#    also what ADR-022 says the build number *is*, so the lane and the versionCode
+#    can no longer disagree.
+#
+# 3. The build number and version name are computed here, not passed in. ADR-022
+#    puts the number at `git rev-list --count HEAD`; bitrise.yml also hardcodes
+#    `--build-name=0.1.0`, which silently drifts from pubspec.yaml. Read pubspec.
+#
+# 4. Loud, early failures. A missing secret, a shallow clone, or a missing APK
+#    currently surface as an opaque plugin error several minutes in.
+
+default_platform(:android)
+
+# This file lives at android/fastlane/, so the Flutter project root is two up.
+# Derived from __dir__ rather than Dir.pwd: fastlane runs lanes from android/,
+# but that is a convention, not a guarantee.
+REPO_ROOT = File.expand_path("../..", __dir__)
+
+platform :android do
+  desc "Build the staging APK (release mode, staging flavor)"
+  lane :build_staging do
+    build_flavor(flavor: "staging", mode: "release")
+  end
+
+  desc "Build the staging APK and upload it to Firebase App Distribution"
+  lane :distribute_staging do
+    apk_path = build_flavor(flavor: "staging", mode: "release")
+
+    distribute(
+      apk_path: apk_path,
+      app_id: fetch_env!(
+        "FIREBASE_STAGING_APP_ID",
+        "The Firebase Android app ID (1:1234567890:android:abcdef). " \
+        "Firebase console > Project settings > Your apps."
+      ),
+      groups: "internal"
+    )
+  end
+
+  # ---------------------------------------------------------------------------
+  # Building
+  # ---------------------------------------------------------------------------
+
+  # Returns the absolute path of the APK it built.
+  private_lane :build_flavor do |options|
+    flavor = options.fetch(:flavor)
+    mode = options.fetch(:mode)
+
+    config_file = File.join(REPO_ROOT, "config", "#{flavor}.json")
+    unless File.exist?(config_file)
+      UI.user_error!(
+        "Missing config/#{flavor}.json. It is gitignored on purpose (ADR-013) — " \
+        "CI decodes it from a base64 secret before calling this lane; locally, " \
+        "copy config/#{flavor}.example.json and fill it in."
+      )
+    end
+
+    build_number = commit_count
+    build_name = pubspec_version_name
+
+    UI.message("Building #{flavor}/#{mode} — #{build_name} (#{build_number})")
+
+    # `flutter build` insists on running from the project root, and fastlane
+    # starts us in android/.
+    Dir.chdir(REPO_ROOT) do
+      sh("flutter", "pub", "get")
+      # sqlite3 ships its native lib via a Dart build hook; off by default.
+      sh("flutter", "config", "--enable-native-assets")
+      sh(
+        "flutter", "build", "apk", "--#{mode}",
+        "--flavor", flavor,
+        "-t", "lib/main_#{flavor}.dart",
+        "--dart-define-from-file=config/#{flavor}.json",
+        "--build-number=#{build_number}",
+        "--build-name=#{build_name}"
+      )
+    end
+
+    apk_path = File.join(
+      REPO_ROOT, "build", "app", "outputs", "flutter-apk",
+      "app-#{flavor}-#{mode}.apk"
+    )
+    unless File.exist?(apk_path)
+      UI.user_error!(
+        "flutter build reported success but no APK at #{apk_path}. " \
+        "Check the flavor/mode naming in android/app/build.gradle.kts."
+      )
+    end
+
+    UI.success("Built #{apk_path} (#{(File.size(apk_path) / 1024.0 / 1024.0).round(1)} MB)")
+    apk_path
+  end
+
+  # ---------------------------------------------------------------------------
+  # Distributing
+  # ---------------------------------------------------------------------------
+
+  private_lane :distribute do |options|
+    args = {
+      app: options.fetch(:app_id),
+      android_artifact_type: "APK",
+      android_artifact_path: options.fetch(:apk_path),
+      groups: options.fetch(:groups),
+      release_notes: release_notes
+    }
+
+    # Two ways to authenticate, in preference order:
+    #   FIREBASE_SERVICE_ACCOUNT_PATH — a service-account JSON key on disk; what
+    #     CI writes today after base64-decoding a secret.
+    #   GOOGLE_APPLICATION_CREDENTIALS — set for us by
+    #     google-github-actions/auth when using Workload Identity Federation, so
+    #     no long-lived key is ever stored. The plugin picks this up on its own.
+    # Either way the account needs roles/firebaseappdistro.admin on the *right*
+    # project — a valid key for the wrong project authenticates fine and then
+    # fails authorization with "permission denied" (see docs/diagrams/07-cicd.md).
+    credentials = ENV["FIREBASE_SERVICE_ACCOUNT_PATH"]
+    if credentials && !credentials.empty?
+      unless File.exist?(credentials)
+        UI.user_error!("FIREBASE_SERVICE_ACCOUNT_PATH points at #{credentials}, which does not exist.")
+      end
+      args[:service_credentials_file] = credentials
+    elsif (ENV["GOOGLE_APPLICATION_CREDENTIALS"] || "").empty?
+      UI.user_error!(
+        "No Firebase credentials. Set FIREBASE_SERVICE_ACCOUNT_PATH to a " \
+        "service-account JSON key, or authenticate via Workload Identity " \
+        "Federation so GOOGLE_APPLICATION_CREDENTIALS is set."
+      )
+    end
+
+    firebase_app_distribution(**args)
+  end
+
+  # ---------------------------------------------------------------------------
+  # Helpers
+  # ---------------------------------------------------------------------------
+
+  # ADR-022: build number = commit count, so the same commit yields the same
+  # number on every host. That only holds on a full clone — GitHub's checkout
+  # action defaults to depth 1, which would quietly ship versionCode 1.
+  def commit_count
+    shallow = sh("git", "rev-parse", "--is-shallow-repository", log: false).strip
+    if shallow == "true"
+      UI.user_error!(
+        "Shallow clone: the ADR-022 build number (git commit count) would be " \
+        "wrong. Use actions/checkout with fetch-depth: 0 (Bitrise: clone_depth -1)."
+      )
+    end
+
+    number_of_commits(all: false)
+  end
+
+  # pubspec.yaml is the single source of the version *name*; the `+N` after it is
+  # only a local-dev default and is never the source of truth (ADR-022).
+  def pubspec_version_name
+    pubspec = File.join(REPO_ROOT, "pubspec.yaml")
+    line = File.readlines(pubspec).find { |l| l.start_with?("version:") }
+    UI.user_error!("No `version:` line in pubspec.yaml") if line.nil?
+
+    line.sub("version:", "").strip.split("+").first
+  end
+
+  def release_notes
+    commit = last_git_commit
+    [
+      "Staging build #{commit_count} · #{commit[:abbreviated_commit_hash]}",
+      commit[:message].to_s.lines.first.to_s.strip
+    ].reject(&:empty?).join("\n")
+  end
+end
